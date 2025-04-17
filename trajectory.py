@@ -1,8 +1,8 @@
-import numpy as numpy
+import numpy as np
 import matplotlib.pyplot as plt
 
 def solve_polynomial_coefficients(t_f, p0, v0, a0, pf, vf, af):
-#5th order polynomial coefficients , maybe 7th order instead?
+# 7th order polynomial
 
     A = np.array([
         [1, 0, 0, 0, 0, 0],
