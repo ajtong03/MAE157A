@@ -17,6 +17,7 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, pf, vf, af):
     b = np.array([p0, v0, a0, pf, vf, af])
     c = np.linalg.solve(A, b)
     return c
+
 # Approach Segment 
 # Goal is to have drone go through origin (gate location)
 #Recommended to have 0 acceleration through the gate
@@ -34,3 +35,20 @@ def vx_t(t):
 
 def ax_t(t):
     return 2 * c_x[2] + 6 * c_x[3] * t + 12 * c_x[4] * t**2 + 20 * c_x[5] * t**3
+
+
+# Plotting
+time_values = np.linspace(0, tf, 200)
+# x - dir
+plt.figure(figsize=(8, 6))
+plt.plot(time_values, [x_t(t) for t in time_values], label="Position")
+plt.plot(time_values, [vx_t(t) for t in time_values], label="Velocity")
+plt.plot(time_values, [ax_t(t) for t in time_values], label="Acceleration")
+plt.title("X-Direction Trajectory (approach segment)")
+plt.xlabel("Time (s)")
+plt.ylabel("Value")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# y - dir
