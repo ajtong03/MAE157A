@@ -67,9 +67,10 @@ class dynamics:
 
 
     def quat_to_rot(self, q):
-        w, x, y, z = q
-        return np.array([
-            [1 - 2*(y**2 + z**2), 2*(x*y - w*z),     2*(x*z + w*y)],
-            [2*(x*y + w*z),     1 - 2*(x**2 + z**2), 2*(y*z - w*x)],
-            [2*(x*z - w*y),     2*(y*z + w*x),     1 - 2*(x**2 + y**2)]
-        ])
+        w, i, j, k = q
+
+        R_x =[(w**2 + i**2 - j**2 - k**2), (2 * (i*j + w*k)), (2 * (i*k - w*j))]
+        R_y = [(2 * (i*j - w*k)), (w**2 - i**2 + j**2 - k**2), (2 * (j*k + w*i))]
+        R_z = [(2 * (i*k + w*j)), (2 * (j*k - w*i)), (w**2 - i**2 - j**2 -+k**2)] 
+
+        return np.array([R_x, R_y, R_z])
