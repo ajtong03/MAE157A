@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # 7th order polynomial
@@ -23,9 +24,10 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
 # mass_drone = 0.399 kg
 
-# x - dire 
+# x - dir
 tf = 12  # seconds
-c_x = solve_polynomial_coefficients(tf, 1.5,0 ,0, 0, 0, 2, 0, 0 )
+c_x = solve_polynomial_coefficients(tf, -1.5, 0, 0, 0, 0, 2, 1.1, 0 )
+print("x-coeffs:", c_x)
 def x_t(t):
     return c_x[0] + c_x[1] * t + c_x[2] * t**2 + c_x[3] * t**3 + c_x[4] * t**4 + c_x[5] * t**5 + c_x[6] * t**6 + c_x[7] * t**7
 def vx_t(t):
@@ -37,8 +39,8 @@ def ax_t(t):
 def jx_t(t):
     return 6 * c_x[3] + 24 * c_x[4] * t + 60 * c_x[5] * t**2 + 120 * c_x[6] * t**3 + 210 * c_x[7] * t**4
 
-# y - dir
 
+'''
 # Plotting
 time_values = np.linspace(0, tf, 200)
 # x - dir
@@ -53,10 +55,10 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
-
+'''
 # y - dir
-c_y = solve_polynomial_coefficients(tf, -1 ,0 ,0, 0, 0, 2, 0, 0 )
-# assuming frame is position 1 m from the ground
+c_y = solve_polynomial_coefficients(tf, -1.5 , 0 ,0, 0, 0, 0.2, 0, 0 )
+print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
 def vy_t(t):
@@ -68,7 +70,7 @@ def ay_t(t):
 def jy_t(t):
     return 6 * c_y[3] + 24 * c_y[4] * t + 60 * c_y[5] * t**2 + 120 * c_y[6] * t**3 + 210 * c_x[7] * t**4
 
-
+'''
 # Plotting
 time_values = np.linspace(0, tf, 200)
 plt.figure(figsize=(8, 6))
@@ -81,9 +83,10 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
-
+'''
 # z - dir 
-c_z = solve_polynomial_coefficients(tf, -1 ,0 ,0, 0, 0, 2, 0, 0 )
+c_z = solve_polynomial_coefficients(tf, -1, 0 ,0, 0, 0, 0.1, 0, 0 )
+print("z-coeffs:", c_z)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 def z_t(t):
     return c_z[0] + c_z[1] * t + c_z[2] * t**2 + c_z[3] * t**3 + c_z[4] * t**4 + c_z[5] * t**5 + c_z[6] * t**6 + c_z[7] * t**7
@@ -99,6 +102,7 @@ def jz_t(t):
 
 # Plotting
 time_values = np.linspace(0, tf, 200)
+'''
 plt.figure(figsize=(8, 6))
 plt.plot(time_values, [z_t(t) for t in time_values], label="Position")
 plt.plot(time_values, [vz_t(t) for t in time_values], label="Velocity")
@@ -109,8 +113,30 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
+'''
+# Departure Segement
+
+#[..]
+
 
 # plotting in 3D
+x_traj_approach = [x_t(t) for t in time_values]
+y_traj_approach = [y_t(t) for t in time_values]
+z_traj_approach = [z_t(t) for t in time_values]
 
-
+# 3D Plot
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot(x_traj_approach, y_traj_approach, z_traj_approach, label='Drone Approach Trajectory')
+ax.plot([0], [0], [0], 'ro', markersize=5, label='Gate Location')  # gate at (0,0,0)
+ax.set_xlim([-2, 2])
+ax.set_ylim([-2, 2])
+ax.set_zlim([-1, 3]) # assuming that the gate is 1m in the air
+ax.set_xlabel('X (m)')
+ax.set_ylabel('Y (m)')
+ax.set_zlabel('Z (m)')
+ax.set_title('3D Drone Trajectory through Gate')
+ax.legend()
+ax.grid(True)
+plt.show()
 
