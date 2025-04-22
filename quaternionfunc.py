@@ -28,3 +28,7 @@ def error(q1, qd):
     qe = product(qd_inv, q1)
  
     return qe
+
+def deriv(q1, w):
+    q_deriv = 0.5 * product(q1, (0, w))
+    return q_deriv
