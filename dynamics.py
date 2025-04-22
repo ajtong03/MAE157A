@@ -1,60 +1,75 @@
-# Filename: dynamics.py
-# Author: ...
-# Created: ...
-# Description: Dynamics for drone simulator
-
 import numpy as np
 
-class dynamics: 
-	def __init__(self, params, dt):
-		# Initialize Params (Need to add more!)
-		self.g = params[0]
-		# self.m = ... Mass
-		# self.J = ... Inertia Tensor
-		# self.l = ... Moment Arm
-		# self.c = ... Propeller Drag Coefficient
 
-	# This is meant to give the rates of each state
-	def rates(self, state, f):
-		# Get rotation matrix from current quaterion
-		R = self.quat_to_rot([state[6], state[7], state[8], state[9]])
 
-		# Get thrust from motor forces f
-		T = f[0] + f[1] + f[2] + f[3]
-		
-		# Velocities
-		dx = state[3]
-		dy = state[4]
-		dz = state[5]
+class dynamics:
+    def __init__(self, params, dt):
+        # Simulation parameters
+        self.g = params[0]            # gravity (m/s^2)
+        self.m = 1.0                  # Mass (kg)
+        self.J = np.diag([0.02, 0.02, 0.04])  # Inertia Tensor (kg·m^2)
+        self.l = 0.1                  # Moment Arm (m)
+        self.c = 0.01                 # Propeller Drag Coefficient (N·m/(N)^2)
+        self.dt = dt                 # integration timestep (s)
 
-		# Accelerations
-		dvx = R[0,2] * T  / self.m
-		dvy = R[1,2] * T  / self.m
-		dxz = R[2,2] * T  / self.m - self.g
+    def print_specs(self):
+        print("=== Drone Specifications ===")
+        print(f"Mass: {self.m} kg")
+        print(f"Gravity: {self.g} m/s^2")
+        print(f"Inertia Tensor:\n{self.J}")
+        print(f"Moment Arm: {self.l} m")
+        print(f"Propeller Drag Coefficient: {self.c} N·m/N^2")
+        print(f"Timestep: {self.dt} s")
+        print("============================")
 
-		# Orientation
-		# dqw = ...
-		# dqx = ...
-		# dqy = ...
-		# dqz = ...
+    def rates(self, state, f):
+        # State: [x,y,z,vx,vy,vz,qw,qx,qy,qz,wx,wy,wz]
+        q = state[6:10]
+        R = self.quat_to_rot(q)
 
-		# Angular Velocities
-		Jinv = np.linalg.inv(J)
-		# dwx = Jinv * ...
-		# dwy = Jinv * ...
-		# dwz = Jinv * ...
+        # Translational dynamics
+        T = np.sum(f)
+        acc = (R @ np.array([0, 0, T])) / self.m - np.array([0, 0, self.g])
 
-		res = np.array([dx, dy, dz, dvx, dvy, dvz, dqw, dqx, dqy, dqz, dwx, dwy, dwz])
+        # Rotational dynamics
+        # Thrust-based moments around x and y axes
+        Mx = self.l * (f[1] - f[3])
+        My = self.l * (f[2] - f[0])
+        # Drag-based yaw moment
+        Mz = self.c * (f[0] - f[1] + f[2] - f[3])
+        M = np.array([Mx, My, Mz])
 
-		return res
+        # Angular acceleration: inv(J) * M
+        omega = state[10:13]
+        domega = np.linalg.inv(self.J) @ (M - np.cross(omega, self.J @ omega))
 
-	# Numerical integration scheme (can do better than Euler!)
-	def propagate(self, state, f, dt):
-		state += dt * self.rates(state, f)
-		return state
+        # Quaternion kinematics: 0.5 * Omega(omega) * q
+        qw, qx, qy, qz = q
+        Omega = np.array([
+            [0,   -omega[0], -omega[1], -omega[2]],
+            [omega[0], 0,    omega[2], -omega[1]],
+            [omega[1], -omega[2], 0,    omega[0]],
+            [omega[2], omega[1], -omega[0], 0]
+        ])
+        dq = 0.5 * Omega @ q
 
-	# Helper function that converts a quaternion to rotation matrix
-	def quat_to_rot(q):
-		# R = ...
-		return R
+        rates = np.zeros(13)
+        rates[0:3] = state[3:6]         # vel
+        rates[3:6] = acc               # acc
+        rates[6:10] = dq               # quaternion rate
+        rates[10:13] = domega          # angular accel
+        return rates
 
+    def propagate(self, state, f, dt=None):
+        # Allow optional override of timestep
+        step = dt if dt is not None else self.dt
+        return state + step * self.rates(state, f)
+
+
+    def quat_to_rot(self, q):
+        w, x, y, z = q
+        return np.array([
+            [1 - 2*(y**2 + z**2), 2*(x*y - w*z),     2*(x*z + w*y)],
+            [2*(x*y + w*z),     1 - 2*(x**2 + z**2), 2*(y*z - w*x)],
+            [2*(x*z - w*y),     2*(y*z + w*x),     1 - 2*(x**2 + y**2)]
+        ])

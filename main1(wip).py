@@ -100,7 +100,7 @@ def run_simulation(use_trajectory):
     dt = 1.0 / rate
     tf = total_time()
     g = 9.8
-    m = 1.0
+    m = 0.399
 
     state = np.zeros(13)
     state[6] = 1.0  # quaternion w
@@ -147,7 +147,7 @@ def run_simulation(use_trajectory):
     posns = np.array([h[1][0:3] for h in history])
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     fname = f"traj_sim_{now}.csv"
-    save_dir = r"C:/Users/Sanat/Documents"
+    save_dir = r"C:/Users/TechP/Documents"
     os.makedirs(save_dir, exist_ok=True)
     path = os.path.join(save_dir, fname)
     np.savetxt(path,
