@@ -1,189 +1,187 @@
-
-# main.py
 import numpy as np
-import os
-import datetime
-import argparse
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
-import dynamics
+from math import sin, cos
+from dynamics import dynamics
+import quaternionfunc
 
-# --- Trajectory definitions inline ---
-gate = None
-T_total = 8.0  # total flight time (s)
+# Try to import custom controller
+try:
+    import controller
+    has_custom = True
+except ImportError:
+    has_custom = False
 
-def load_gate(path=None):
-    global gate
-    gate = {
-        'position': np.array([5.0, 0.0, 2.0]),
-        'yaw': np.deg2rad(90.0),
-        'pitch': 0.0  # no pitch, only yaw for a true rectangle
-    }
-    return gate
+# --- conversions ------------------------------------------------
 
-
-def setup_trajectory(g):
-    global gate
-    gate = g
-
-
-def total_time():
-    return T_total
+def euler_to_quat(phi, theta, psi):
+    w = cos(phi/2)*cos(theta/2)*cos(psi/2) + sin(phi/2)*sin(theta/2)*sin(psi/2)
+    x = sin(phi/2)*cos(theta/2)*cos(psi/2) - cos(phi/2)*sin(theta/2)*sin(psi/2)
+    y = cos(phi/2)*sin(theta/2)*cos(psi/2) + sin(phi/2)*cos(theta/2)*sin(psi/2)
+    z = cos(phi/2)*cos(theta/2)*sin(psi/2) - sin(phi/2)*sin(theta/2)*cos(psi/2)
+    return np.array([w, x, y, z])
 
 
-def desired_state(t):
-    p0 = np.zeros(3)
-    pg = gate['position']
-    tau = T_total / 2
-    if t <= tau:
-        s = t / tau
-        pos = p0 + s * (pg - p0)
-        vel = (pg - p0) / tau
-        acc = np.zeros(3)
-    else:
-        s = (t - tau) / tau
-        pos = pg + s * (pg - p0)
-        vel = (pg - p0) / tau
-        acc = np.zeros(3)
-    yaw = gate['yaw']
-    yaw_rate = 0.0
-    return pos, vel, acc, yaw, yaw_rate
+def quat_to_euler(q):
+    w, x, y, z = q
+    phi = np.arctan2(2*(w*x + y*z), 1 - 2*(x*x + y*y))
+    theta = np.arcsin(np.clip(2*(w*y - z*x), -1.0, 1.0))
+    psi = np.arctan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
+    return phi, theta, psi
 
-# --- Attitude helper functions ---
-def rot_to_quat(R):
+
+def attitude_from_acc(a_des, yaw):
+    b3 = a_des / np.linalg.norm(a_des)
+    c, s = cos(yaw), sin(yaw)
+    b1d = np.array([c, s, 0.0])
+    b2 = np.cross(b3, b1d); b2 /= np.linalg.norm(b2)
+    b1 = np.cross(b2, b3)
+    R = np.column_stack((b1, b2, b3))
     t = np.trace(R)
     if t > 0:
         S = 2 * np.sqrt(t + 1.0)
-        w = 0.25 * S
-        x = (R[2,1] - R[1,2]) / S
-        y = (R[0,2] - R[2,0]) / S
-        z = (R[1,0] - R[0,1]) / S
+        qw = 0.25 * S
+        qx = (R[2,1] - R[1,2]) / S
+        qy = (R[0,2] - R[2,0]) / S
+        qz = (R[1,0] - R[0,1]) / S
     else:
         i = np.argmax([R[0,0], R[1,1], R[2,2]])
         if i == 0:
             S = 2 * np.sqrt(1 + R[0,0] - R[1,1] - R[2,2])
-            w = (R[2,1] - R[1,2]) / S; x = 0.25 * S
-            y = (R[0,1] + R[1,0]) / S; z = (R[0,2] + R[2,0]) / S
+            qw = (R[2,1] - R[1,2]) / S; qx = 0.25 * S
+            qy = (R[0,1] + R[1,0]) / S; qz = (R[0,2] + R[2,0]) / S
         elif i == 1:
             S = 2 * np.sqrt(1 + R[1,1] - R[0,0] - R[2,2])
-            w = (R[0,2] - R[2,0]) / S
-            x = (R[0,1] + R[1,0]) / S; y = 0.25 * S
-            z = (R[1,2] + R[2,1]) / S
+            qw = (R[0,2] - R[2,0]) / S
+            qx = (R[0,1] + R[1,0]) / S; qy = 0.25 * S
+            qz = (R[1,2] + R[2,1]) / S
         else:
             S = 2 * np.sqrt(1 + R[2,2] - R[0,0] - R[1,1])
-            w = (R[1,0] - R[0,1]) / S
-            x = (R[0,2] + R[2,0]) / S
-            y = (R[1,2] + R[2,1]) / S; z = 0.25 * S
-    return np.array([w, x, y, z])
+            qw = (R[1,0] - R[0,1]) / S
+            qx = (R[0,2] + R[2,0]) / S; qy = (R[1,2] + R[2,1]) / S
+            qz = 0.25 * S
+    return np.array([qw, qx, qy, qz])
 
-def attitude_from_acc(a_des, yaw):
-    b3 = a_des / np.linalg.norm(a_des)
-    c = np.cos(yaw); s = np.sin(yaw)
-    b1d = np.array([c, s, 0.0])
-    b2 = np.cross(b3, b1d); b2 /= np.linalg.norm(b2)
-    b1 = np.cross(b2, b3)
-    R_des = np.column_stack((b1, b2, b3))
-    return rot_to_quat(R_des)
+# --- trajectory --------------------------------------------------
 
-# --- Controllers inline ---
-def default_takeoff_controller(t, state):
-    z_des = 10.0; mass = 1.0; g = 9.8
-    err = z_des - state[2]; err_dot = -state[5]
-    F = mass * (g + 2.0 * err + 1.0 * err_dot)
-    F = max(0.0, F)
-    return np.array([F/4.0] * 4)
-
-# --- Simulation ---
-def run_simulation(use_trajectory):
-    t = 0.0
-    rate = 500
-    dt = 1.0 / rate
-    tf = total_time()
-    g = 9.8
-    m = 0.399
-
-    state = np.zeros(13)
-    state[6] = 1.0  # quaternion w
-    state[2] = 0.1  # start 0.1 m above ground
-    f = np.zeros(4)
-
-    dyn = dynamics.dynamics(np.array([g]), dt)
-    dyn.print_specs()
-
-    history = []
-    while t < tf:
-        # Select motor forces
-        if use_trajectory:
-            # takeoff phase
-            if state[2] < 0.5:
-                f = default_takeoff_controller(t, state)
-            else:
-                # trajectory phase
-                pd, vd, ad, yawd, _ = desired_state(t)
-                e = pd - state[0:3]
-                ed = vd - state[3:6]
-                a_des = ad + np.diag([1.5,1.5,2.0]) @ e + np.diag([0.8,0.8,1.0]) @ ed + np.array([0,0,g])
-                T = max(m * np.linalg.norm(a_des), m * g)
-                l = dyn.l
-                My = a_des[0] * m * l
-                f_base = T / 4.0
-                f1 = np.clip(f_base - My/(2*l), 0.0, None)
-                f2 = np.clip(f_base, 0.0, None)
-                f3 = np.clip(f_base + My/(2*l), 0.0, None)
-                f4 = np.clip(f_base, 0.0, None)
-                f = np.array([f1, f2, f3, f4])
-        else:
-            f = default_takeoff_controller(t, state)
-
-        # Propagate one step
-        state = dyn.propagate(state, f, dt)
-        history.append((t, state.copy(), f.copy()))
-
-        # Advance time
-        t += dt
-
-    # Save trajectory
-    times = np.array([h[0] for h in history])
-    posns = np.array([h[1][0:3] for h in history])
-    now = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    fname = f"traj_sim_{now}.csv"
-    save_dir = r"C:/Users/TechP/Documents"
-    os.makedirs(save_dir, exist_ok=True)
-    path = os.path.join(save_dir, fname)
-    np.savetxt(path,
-               np.hstack((times.reshape(-1,1), posns)),
-               delimiter=',',
-               header='t,x,y,z',
-               comments='')
-    print(f"Saved to {path}")
-
-    # Plot trajectory
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(posns[:,0], posns[:,1], posns[:,2], linewidth=3, label='Drone Path')
-    # Draw rectangular gate
-    corners = np.array([
-        [-0.25,0,-0.5],[0.25,0,-0.5],[0.25,0,0.5],[-0.25,0,0.5],[-0.25,0,-0.5]
+def solve_poly(t_f, p0, v0, a0, pf, vf, af):
+    A = np.array([
+        [1, 0,      0,        0,         0,          0],
+        [0, 1,      0,        0,         0,          0],
+        [0, 0,      2,        0,         0,          0],
+        [1, t_f,    t_f**2,   t_f**3,    t_f**4,     t_f**5],
+        [0, 1,   2*t_f,   3*t_f**2,  4*t_f**3,   5*t_f**4],
+        [0, 0,      2,    6*t_f,   12*t_f**2,  20*t_f**3]
     ])
-    yaw = gate['yaw']
-    Rz = np.array([
-        [np.cos(yaw), -np.sin(yaw), 0],
-        [np.sin(yaw),  np.cos(yaw), 0],
-        [0,            0,           1],
-    ])
-    world_c = (Rz @ corners.T).T + gate['position']
-    ax.plot(world_c[:,0], world_c[:,1], world_c[:,2], color='g', linewidth=4, label='Gate')
+    b = np.array([p0, v0, a0, pf, vf, af])
+    return np.linalg.solve(A, b)
 
-    ax.set(xlabel='X', ylabel='Y', zlabel='Z', title='Drone Trajectory Through Gate')
-    ax.legend()
-    plt.show()
+# trajectory coefficients
+tf = 15.0
+c_x = solve_poly(tf, 1.5, 0.0, 0.0, 0.0, 3.0, 0.0)
+def x_t(t): return sum(c_x[i] * t**i for i in range(6))
+def vx_t(t): return sum(i * c_x[i] * t**(i-1) for i in range(1,6))
+def ax_t(t): return sum(i*(i-1)*c_x[i] * t**(i-2) for i in range(2,6))
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Drone gate-tracking sim.')
-    parser.add_argument('--ctrl', choices=['trajectory','default'], default='trajectory')
-    args = parser.parse_args()
+y_const, z_const, yaw_const = 0.0, 2.0, 0.0
 
-    g = load_gate(None)
-    setup_trajectory(g)
-    run_simulation(args.ctrl == 'trajectory')
+# --- initialize dynamics & state -------------------------------
 
+dt = 1.0 / 50.0
+dyn = dynamics(params=[9.81], dt=dt)
+state = np.zeros(13)
+state[0:3]  = [x_t(0), y_const, z_const]
+state[3]    = vx_t(0)
+state[6:10] = euler_to_quat(0, 0, yaw_const)
+
+# tune custom controller if available
+if has_custom:
+    q_hist = [state[6:10]] * 10
+    q_des  = euler_to_quat(0, 0, yaw_const)
+    #Kp_opt, Kd_opt, _, _ = controller.naiveComputeGains(q_hist, q_des)
+    #print("Custom controller gains loaded")
+
+# --- setup plotting ---------------------------------------------
+
+fig = plt.figure()
+ax  = fig.add_subplot(111, projection='3d')
+ax.set_xlim(-1, 2)
+ax.set_ylim(-1, 2)
+ax.set_zlim(0, 3)
+trail, = ax.plot([], [], [], 'b-', lw=2)
+arm1,  = ax.plot([], [], [], 'k-', lw=4)
+arm2,  = ax.plot([], [], [], 'k-', lw=4)
+history = []
+
+# draw gate
+gate = np.array([[-.5,0,-.25],[.5,0,-.25],[.5,0,.25],[-.5,0,.25],[-.5,0,-.25]])
+Rz = np.array([[0,-1,0],[1,0,0],[0,0,1]])
+gc = gate @ Rz.T + np.array([0, 0, z_const])
+ax.plot(gc[:,0], gc[:,1], gc[:,2], 'g-', lw=2)
+
+# --- animation update -------------------------------------------
+def update(i):
+    global state, history
+    t = i * dt
+
+    # desired position and feedforward accel + PD
+    pd = np.array([x_t(min(t,tf)), y_const, z_const])
+    vd = np.array([vx_t(t), 0.0, 0.0])
+    ad = np.array([ax_t(t), 0.0, 0.0])
+    e_p = pd - state[0:3]
+    e_v = vd - state[3:6]
+    a_des = ad + 1.5*e_p + 0.8*e_v + np.array([0, 0, dyn.g])
+    T     = dyn.m * np.linalg.norm(a_des)
+
+    # attitude setpoint
+    q_d = attitude_from_acc(a_des, yaw_const)
+    q_a = state[6:10]
+    w   = state[10:13]
+
+    # compute control moments
+    if has_custom:
+        Re = dyn.quat_to_rot(quaternionfunc.error(q_a, q_d))
+        Kp_opt, Kd_opt = controller.naiveComputeGains(q_hist, q_des, f)
+        M  = controller.computeTorqueNaive(Kp_opt, Kd_opt, q_a, q_d, w, np.zeros(3))
+    else:
+        qe = quaternionfunc.error(q_a, q_d)
+        qe /= np.linalg.norm(qe)
+        M  = -5 * qe[1:] - 0.1 * w
+
+    # solve rotor thrusts
+    A = np.array([[1,1,1,1], [0,dyn.l,0,-dyn.l], [-dyn.l,0,dyn.l,0], [dyn.c,-dyn.c,dyn.c,-dyn.c]])
+    f = np.linalg.solve(A, np.hstack((T, M)))
+
+    # propagate state
+    state = dyn.propagate(state, f)
+
+    # record and draw trail
+    history.append(state[0:3])
+    pts = np.array(history)
+    trail.set_data(pts[:,0], pts[:,1])
+    trail.set_3d_properties(pts[:,2])
+
+    # draw rotor arms
+    phi, th, ps = quat_to_euler(state[6:10])
+    offs = [(dyn.l,0,0), (-dyn.l,0,0), (0,dyn.l,0), (0,-dyn.l,0)]
+    world = []
+    for dx, dy, dz in offs:
+        Xw = cos(ps)*cos(th)*dx + (cos(ps)*sin(phi)*sin(th)-cos(phi)*sin(ps))*dy \
+             + (cos(phi)*cos(ps)*sin(th)+sin(phi)*sin(ps))*dz + state[0]
+        Yw = sin(ps)*cos(th)*dx + (sin(ps)*sin(phi)*sin(th)+cos(phi)*cos(ps))*dy \
+             + (cos(phi)*sin(ps)*sin(th)-cos(ps)*sin(phi))*dz + state[1]
+        Zw = -sin(th)*dx + cos(th)*sin(phi)*dy + cos(phi)*cos(th)*dz + state[2]
+        world.append((Xw, Yw, Zw))
+    a, b, c, d = world
+    arm1.set_data([a[0], c[0]], [a[1], c[1]])
+    arm1.set_3d_properties([a[2], c[2]])
+    arm2.set_data([b[0], d[0]], [b[1], d[1]])
+    arm2.set_3d_properties([b[2], d[2]])
+
+    return trail, arm1, arm2
+
+# run animation
+frames = int(tf/dt) + 1
+ani = animation.FuncAnimation(fig, update, frames=frames, interval=dt*1000)
+plt.show()

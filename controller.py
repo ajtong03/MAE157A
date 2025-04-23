@@ -1,4 +1,5 @@
 import quaternionfunc
+import dynamics as dyn
 import numpy as np
 import random
 
@@ -31,8 +32,8 @@ def overshoot_settime(q_act, q_d, time = 10, thresh = 0.05):
     return overshoot, set_time
 
 # naive approach to computing gains  
-def naiveComputeGains(q_act, q_d):
-    Kp_range = (1, 20)  # roll, pitch, yaw
+def naiveComputeGains(q_act, q_d, f):
+    Kp_range = (1, 20)  
     Kd_range = (1, 20)
 
     q_e = quaternionfunc.error(q_act, q_d)
@@ -42,13 +43,16 @@ def naiveComputeGains(q_act, q_d):
     Kp_opt = np.diag([0, 0, 0])
     Kd_opt = np.diag([0, 0, 0])
 
+    # temp variable that holds the current quaternion being evaluated
+    q_cur = q_act
+
     for i in range(1000):
-        Kp = np.diag([random.uniform(*Kp_range) for i in range(3)])
+        Kp = np.diag([random.uniform(*Kp_range) for i in range(3)]) # roll, pitch, yaw
         Kd = np.diag([random.uniform(*Kd_range) for i in range(3)]) 
 
-        #call function to get q_act
-        #q_new = _____
-        qe_new = quaternionfunc(q_new, q_d)
+        #call function to get new q_act with the applied torque
+        q_new = dyn.dynamics.propagate(q_cur, f)
+        qe_new = quaternionfunc.error(q_new, q_d)
         if(qe_new < q_e_opt):
             q_e_opt = qe_new
             Kp_opt = Kp
@@ -65,9 +69,9 @@ def computeGains(q_act, q_d):
     lambda_range = (0, 1)
 
     # set these so that if q_act is already at q_d, stay in orientation
-    Kp_opt = np.diag([1, 1, 1])
-    Kd_opt = np.diag([1, 1, 1])
-    lambda_opt = np.diag([1, 1, 1])
+    Kp_opt = np.diag([0, 0, 0])
+    Kd_opt = np.diag([0, 0, 0])
+    lambda_opt = np.diag([0, 0, 0])
 
     #set variable to track optimal performance value
     #q_e = quaternionfunc.error(q_act, q_d)
@@ -95,8 +99,8 @@ def computeGains(q_act, q_d):
             set_opt = set_time
         
             # narrow the range if gains improve performance
-            Kp_range = (Kp_opt[0, 0] - 0.5, Kp_opt[0, 0] + 0.5)
-            Kd_range = (Kd_opt[0, 0] - 0.5, Kd_opt[0, 0] + 0.5)
+            # Kp_range = (Kp_opt[0, 0] - 0.5, Kp_opt[0, 0] + 0.5)
+            # Kd_range = (Kd_opt[0, 0] - 0.5, Kd_opt[0, 0] + 0.5)
         
         #Increase the range if no improvement
         # elif i % 100 == 0 and perf_opt == float('inf'):
