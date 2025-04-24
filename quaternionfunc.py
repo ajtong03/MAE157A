@@ -15,17 +15,19 @@ def product(q1, q2):
     return prod_quaternion
     
 # function to compute the inverse of a quaternion
-def inverse(q1):
-    mag = q1(0)
-    vec = -q1(1)
-    q_inv = np.array([mag, vec])
+def inverse(q):
+    mag = q[0]
+    i = -q[1]
+    j = -q[2]
+    k = -q[3]
+    q_inv = np.array([mag, i, j, k])
 
     return q_inv
     
 # function to compute the error between desired quaternion and current quaternion
-def error(q1, qd):
+def error(qa, qd):
     qd_inv = inverse(qd)
-    qe = product(qd_inv, q1)
+    qe = product(qd_inv, qa)
  
     return qe
 

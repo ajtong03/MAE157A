@@ -1,7 +1,10 @@
-import quaternionfunc
-import dynamics as dyn
 import numpy as np
 import random
+from dynamics import dynamics   # import the class, not the module
+import quaternionfunc
+
+# make a local dynamics instance (match your main’s params & dt!)
+_dyn = dynamics(params=[9.81], dt=1.0/50.0)
 
 def quat_angle_err(q_act, q_d):
 # compute angle of error
@@ -33,31 +36,38 @@ def overshoot_settime(q_act, q_d, time = 10, thresh = 0.05):
 
 # naive approach to computing gains  
 def naiveComputeGains(q_act, q_d, f):
-    Kp_range = (1, 20)  
+    Kp_range = (1, 20)
     Kd_range = (1, 20)
 
-    q_e = quaternionfunc.error(q_act, q_d)
-    q_e_opt = q_e
+    # current best error (angle or norm—whatever you were using)
+    q_e_opt = quaternionfunc.error(q_act, q_d)
 
-    # if q_act and q_d are the same, there should be no gains applied
     Kp_opt = np.diag([0, 0, 0])
     Kd_opt = np.diag([0, 0, 0])
 
-    # temp variable that holds the current quaternion being evaluated
-    q_cur = q_act
+    for _ in range(1000):
+        Kp = np.diag([random.uniform(*Kp_range) for _ in range(3)])
+        Kd = np.diag([random.uniform(*Kd_range) for _ in range(3)])
 
-    for i in range(1000):
-        Kp = np.diag([random.uniform(*Kp_range) for i in range(3)]) # roll, pitch, yaw
-        Kd = np.diag([random.uniform(*Kd_range) for i in range(3)]) 
+        # build a full‐size state vector, sticking q_act into the quaternion slot
+        state_test = np.zeros(13)
+        state_test[6:10] = q_act
 
-        #call function to get new q_act with the applied torque
-        q_new = dyn.dynamics.propagate(q_cur, f)
+        # propagate that test state under your candidate thrusts `f`
+        state_new = _dyn.propagate(state_test, f)
+
+        # pull out the new quaternion
+        q_new = state_new[6:10]
+        
+        # measure the new error
         qe_new = quaternionfunc.error(q_new, q_d)
-        if(qe_new < q_e_opt):
+
+        # if it’s better, keep these gains
+        if np.linalg.norm(qe_new) < np.linalg.norm(q_e_opt):
             q_e_opt = qe_new
             Kp_opt = Kp
             Kd_opt = Kd
-    
+
     return Kp_opt, Kd_opt
 
 # the torque needs to be applied to the orientation and q_act needs to be refed into this   
@@ -116,9 +126,16 @@ def computeLambda(range, lambda_opt):
 
 
 def computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d):
-    q_e = quaternionfunc.error(q_act,q_d)
+    q_e = quaternionfunc.error(q_act, q_d)
     w_e = w - w_d
-    torque = -q_e(0) * Kp * q_e(1) - Kd * w_e
+
+    # real part
+    alpha = q_e[0]
+    # vector part
+    eps = q_e[1:]
+
+    # torque = – α·(Kp·eps)  –  (Kd·w_e)
+    torque = -alpha * (Kp.dot(eps)) - (Kd.dot(w_e))
     return torque
 
 def computeTorque(Kp, Kd, lambda_opt, q_act, q_d, w, w_d, Re):
