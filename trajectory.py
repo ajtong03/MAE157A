@@ -1,6 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from math import sin,cos, tan
+from scipy.spatial.transform import Rotation as R_transform
+
+# Given values
+Td = 7.464
+m = 0.847
+g = 9.81 
+theta_gate = np.radians(45)  # Gate yaw angle in radians
+
+F_thrust_B = np.array([0, 0, Td])
+F_gravity_N = np.array([0, 0, -m * g])
+
+# Rotation Matrix (Yaw rotation)
+R_NB = R_transform.from_euler('z', theta_gate).as_matrix()
+
+# Thrust in World Frame
+F_thrust_N = R_NB @ F_thrust_B
+
+# Force in World Frame
+F_net_N = F_thrust_N + F_gravity_N
+
+# Desired Accelerations
+
+#print(f"Desired Accelerations in World Frame:")
+#print(f"ax_N = {ax_N:.2f} m/s^2")
+#print(f"ay_N = {ay_N:.2f} m/s^2")
+#print(f"az_N = {az_N:.2f} m/s^2")
+
+
 
 def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # 7th order polynomial
@@ -22,11 +51,11 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # Approach Segment 
 # Goal is to have drone go through origin (gate location)
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
-# mass_drone = 0.399 kg
 
-# x - dir
-tf = 12  # seconds
-c_x = solve_polynomial_coefficients(tf, -1.5, 0, 0, 0, 0, 2, 1.1, 0 )
+# x - axis
+tf = 10  # seconds
+c_x = solve_polynomial_coefficients(tf, -1.25, 0, 0, 0, 0, 2, 1.1, 0 )
+#
 print("x-coeffs:", c_x)
 def x_t(t):
     return c_x[0] + c_x[1] * t + c_x[2] * t**2 + c_x[3] * t**3 + c_x[4] * t**4 + c_x[5] * t**5 + c_x[6] * t**6 + c_x[7] * t**7
@@ -42,7 +71,7 @@ def jx_t(t):
 tf1= 15 # seconds for departure segment only
 
 
-'''
+
 # Plotting
 time_values = np.linspace(0, tf, 200)
 # x - dir
@@ -59,7 +88,7 @@ plt.grid(True)
 plt.show()
 
 # y - dir
-c_y = solve_polynomial_coefficients(tf, -1.5 , 0 ,0, 0, 0, 0.2, -0.3, 0 )
+c_y = solve_polynomial_coefficients(tf, -1.25 , 0 ,0, 0, 0, 1, 0.5, 0 )
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
@@ -87,7 +116,7 @@ plt.grid(True)
 plt.show()
 
 # z - dir 
-c_z = solve_polynomial_coefficients(tf, 0, 0 ,0, 0, 1, 0, 0, 0 )
+c_z = solve_polynomial_coefficients(tf, 0, 0 ,0, 0, 1, -1, -0.75, 0 )
 print("z-coeffs:", c_z)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 # needs to counteract gravity in this case
