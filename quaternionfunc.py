@@ -32,5 +32,6 @@ def error(qa, qd):
     return qe
 
 def deriv(q1, w):
-    q_deriv = 0.5 * product(q1, (0, w))
+    w_quat = [0, w[0], w[1], w[2]]
+    q_deriv = 0.5 * product(q1, w_quat)
     return q_deriv
