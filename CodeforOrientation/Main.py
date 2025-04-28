@@ -130,16 +130,12 @@ def update(i):
     M0 = -5 * qe[1:] - 0.1 * w
 
     A_mat = np.array([[1,1,1,1], [0,dyn.l,0,-dyn.l], [-dyn.l,0,dyn.l,0], [dyn.c,-dyn.c,dyn.c,-dyn.c]])
-    #f0 = np.linalg.solve(A_mat, np.hstack((T, M0)))
-    f = np.linalg.solve(A_mat, np.hstack((T, M0)))
-  
-    
+    f0 = np.linalg.solve(A_mat, np.hstack((T, M0)))
+
     if has_custom:
         # pass the correct initial thrust f0
-        Kp_opt, Kd_opt = controller.naiveComputeGains(q_a, q_d, state, w, np.zeros(3), T)
-
-       # M = controller.computeTorqueNaive(Kp_opt, Kd_opt, q_a, q_d, w, np.zeros(3))
-        M = controller.computeTorqueNaive(-Kp_opt, Kd_opt, q_a, q_d, w, np.zeros(3))
+        Kp_opt, Kd_opt = controller.naiveComputeGains(q_a, q_d, f0)
+        M = controller.computeTorqueNaive(Kp_opt, Kd_opt, q_a, q_d, w, np.zeros(3))
     else:
         M = M0
 

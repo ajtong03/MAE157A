@@ -6,10 +6,12 @@ class dynamics:
     def __init__(self, params, dt):
         # Simulation parameters
         self.g = params[0]            # gravity (m/s^2)
-        self.m = 1.0                  # Mass (kg)
-        self.J = np.diag([0.02, 0.02, 0.04])  # Inertia Tensor (kg·m^2)
-        self.l = 0.1                  # Moment Arm (m)
-        self.c = 0.01                 # Propeller Drag Coefficient (N·m/(N)^2)
+        self.m = .847                  # Mass (kg)
+        self.J = np.array([1.89e-3, -5.78e-6, 1.07e-07],
+                          [-5.78e-6, 2.496e-3, -4.01e-4],
+                          [-1.07e-7, -2.01e-7, 4.55e-3])  # Inertia Tensor (kg·m^2)
+        self.l = 0.07                  # Moment Arm (m)
+        self.c = 0.0131                 # Propeller Drag Coefficient (N·m/(N)^2)
         self.dt = dt                 # integration timestep (s)
 
     def print_specs(self):
@@ -66,11 +68,11 @@ class dynamics:
         return state + step * self.rates(state, f)
 
 
-    def quat_to_rot(self, q):
+    def quat_to_rot(q):
         w, i, j, k = q
 
         R_x =[(w**2 + i**2 - j**2 - k**2), (2 * (i*j + w*k)), (2 * (i*k - w*j))]
         R_y = [(2 * (i*j - w*k)), (w**2 - i**2 + j**2 - k**2), (2 * (j*k + w*i))]
         R_z = [(2 * (i*k + w*j)), (2 * (j*k - w*i)), (w**2 - i**2 - j**2 -+k**2)] 
 
-        return np.array([R_x, R_y, R_z])
+        return np.array([R_x, R_y, R_z]) 

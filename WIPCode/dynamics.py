@@ -1,4 +1,5 @@
 import numpy as np
+
 class dynamics:
     def __init__(self, params, dt):
         # Simulation parameters
@@ -62,8 +63,7 @@ class dynamics:
     def propagate(self, state, f, dt=None):
         step = dt if dt is not None else self.dt
         return state + step * self.rates(state, f)
-    
-   
+
     @staticmethod
     def quat_to_rot(q):
         w, i, j, k = q
@@ -71,4 +71,3 @@ class dynamics:
         R_y = [2*(i*j - w*k),         w*w - i*i + j*j - k*k, 2*(j*k + w*i)]
         R_z = [2*(i*k + w*j),         2*(j*k - w*i),         w*w - i*i - j*j + k*k]
         return np.array([R_x, R_y, R_z])
-        

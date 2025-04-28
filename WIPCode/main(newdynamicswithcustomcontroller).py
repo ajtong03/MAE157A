@@ -22,12 +22,14 @@ def euler_to_quat(phi, theta, psi):
     z = cos(phi/2)*cos(theta/2)*sin(psi/2) - sin(phi/2)*sin(theta/2)*cos(psi/2)
     return np.array([w, x, y, z])
 
+
 def quat_to_euler(q):
     w, x, y, z = q
     phi = np.arctan2(2*(w*x + y*z), 1 - 2*(x*x + y*y))
     theta = np.arcsin(np.clip(2*(w*y - z*x), -1.0, 1.0))
     psi = np.arctan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
     return phi, theta, psi
+
 
 def attitude_from_acc(a_des, yaw):
     b3 = a_des / np.linalg.norm(a_des)
@@ -75,6 +77,7 @@ def solve_poly(t_f, p0, v0, a0, pf, vf, af):
     b = np.array([p0, v0, a0, pf, vf, af])
     return np.linalg.solve(A, b)
 
+# trajectory coefficients
 tf = 15.0
 c_x = solve_poly(tf, 1.5, 0.0, 0.0, 0.0, 3.0, 0.0)
 def x_t(t): return sum(c_x[i] * t**i for i in range(6))
@@ -83,6 +86,8 @@ def ax_t(t): return sum(i*(i-1)*c_x[i] * t**(i-2) for i in range(2,6))
 
 y_const, z_const, yaw_const = 0.0, 2.0, 0.0
 
+# --- initialize dynamics & state -------------------------------
+
 dt = 1.0 / 50.0
 dyn = dynamics(params=[9.81], dt=dt)
 state = np.zeros(13)
@@ -90,9 +95,14 @@ state[0:3]  = [x_t(0), y_const, z_const]
 state[3]    = vx_t(0)
 state[6:10] = euler_to_quat(0, 0, yaw_const)
 
+# tune custom controller if available
 if has_custom:
-    q_hist = [state[6:10].copy()] * 10
+    q_hist = [state[6:10]] * 10
     q_des  = euler_to_quat(0, 0, yaw_const)
+    Kp_opt, Kd_opt, _, _ = controller.computeGains(q_hist, q_des)
+    print("Custom controller gains loaded")
+
+# --- setup plotting ---------------------------------------------
 
 fig = plt.figure()
 ax  = fig.add_subplot(111, projection='3d')
@@ -104,15 +114,18 @@ arm1,  = ax.plot([], [], [], 'k-', lw=4)
 arm2,  = ax.plot([], [], [], 'k-', lw=4)
 history = []
 
+# draw gate
 gate = np.array([[-.5,0,-.25],[.5,0,-.25],[.5,0,.25],[-.5,0,.25],[-.5,0,-.25]])
 Rz = np.array([[0,-1,0],[1,0,0],[0,0,1]])
 gc = gate @ Rz.T + np.array([0, 0, z_const])
 ax.plot(gc[:,0], gc[:,1], gc[:,2], 'g-', lw=2)
 
+# --- animation update -------------------------------------------
 def update(i):
-    global state, history, q_hist
+    global state, history
     t = i * dt
 
+    # desired position and feedforward accel + PD
     pd = np.array([x_t(min(t,tf)), y_const, z_const])
     vd = np.array([vx_t(t), 0.0, 0.0])
     ad = np.array([ax_t(t), 0.0, 0.0])
@@ -121,41 +134,34 @@ def update(i):
     a_des = ad + 1.5*e_p + 0.8*e_v + np.array([0, 0, dyn.g])
     T     = dyn.m * np.linalg.norm(a_des)
 
+    # attitude setpoint
     q_d = attitude_from_acc(a_des, yaw_const)
     q_a = state[6:10]
     w   = state[10:13]
 
-    qe = quaternionfunc.error(q_a, q_d)
-    qe /= np.linalg.norm(qe)
-    M0 = -5 * qe[1:] - 0.1 * w
-
-    A_mat = np.array([[1,1,1,1], [0,dyn.l,0,-dyn.l], [-dyn.l,0,dyn.l,0], [dyn.c,-dyn.c,dyn.c,-dyn.c]])
-    #f0 = np.linalg.solve(A_mat, np.hstack((T, M0)))
-    f = np.linalg.solve(A_mat, np.hstack((T, M0)))
-  
-    
+    # compute control moments
     if has_custom:
-        # pass the correct initial thrust f0
-        Kp_opt, Kd_opt = controller.naiveComputeGains(q_a, q_d, state, w, np.zeros(3), T)
-
-       # M = controller.computeTorqueNaive(Kp_opt, Kd_opt, q_a, q_d, w, np.zeros(3))
-        M = controller.computeTorqueNaive(-Kp_opt, Kd_opt, q_a, q_d, w, np.zeros(3))
+        Re = dyn.quat_to_rot(quaternionfunc.error(q_a, q_d))
+        M  = controller.computeTorque(Kp_opt, Kd_opt, np.eye(3), q_a, q_d, w, np.zeros(3), Re)
     else:
-        M = M0
+        qe = quaternionfunc.error(q_a, q_d)
+        qe /= np.linalg.norm(qe)
+        M  = -5 * qe[1:] - 0.1 * w
 
-    f = np.linalg.solve(A_mat, np.hstack((T, M)))
+    # solve rotor thrusts
+    A = np.array([[1,1,1,1], [0,dyn.l,0,-dyn.l], [-dyn.l,0,dyn.l,0], [dyn.c,-dyn.c,dyn.c,-dyn.c]])
+    f = np.linalg.solve(A, np.hstack((T, M)))
+
+    # propagate state
     state = dyn.propagate(state, f)
 
-    if has_custom:
-        q_hist.append(state[6:10].copy())
-        if len(q_hist) > 10:
-            q_hist.pop(0)
-
+    # record and draw trail
     history.append(state[0:3])
     pts = np.array(history)
     trail.set_data(pts[:,0], pts[:,1])
     trail.set_3d_properties(pts[:,2])
 
+    # draw rotor arms
     phi, th, ps = quat_to_euler(state[6:10])
     offs = [(dyn.l,0,0), (-dyn.l,0,0), (0,dyn.l,0), (0,-dyn.l,0)]
     world = []
@@ -174,6 +180,7 @@ def update(i):
 
     return trail, arm1, arm2
 
+# run animation
 frames = int(tf/dt) + 1
-ani = animation.FuncAnimation(plt.gcf(), update, frames=frames, interval=dt*1000)
+ani = animation.FuncAnimation(fig, update, frames=frames, interval=dt*1000)
 plt.show()

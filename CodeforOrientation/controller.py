@@ -5,7 +5,6 @@ import quaternionfunc
 
 # make a local dynamics instance (match your main’s params & dt!)
 _dyn = dynamics(params=[9.81], dt=1.0/50.0)
-A_mat = np.array([[1,1,1,1], [0, _dyn.l,0,-_dyn.l], [-_dyn.l,0, _dyn.l,0], [_dyn.c,-_dyn.c, _dyn.c,-_dyn.c]])
 
 def quat_angle_err(q_act, q_d):
 # compute angle of error
@@ -36,7 +35,7 @@ def overshoot_settime(q_act, q_d, time = 10, thresh = 0.05):
     return overshoot, set_time
 
 # naive approach to computing gains  
-def naiveComputeGains(q_act, q_d, state, w, w_d, T):
+def naiveComputeGains(q_act, q_d, f):
     Kp_range = (1, 20)
     Kd_range = (1, 20)
 
@@ -46,25 +45,20 @@ def naiveComputeGains(q_act, q_d, state, w, w_d, T):
     Kp_opt = np.diag([0, 0, 0])
     Kd_opt = np.diag([0, 0, 0])
 
-    q_cur = q_act
-    w_opt = w
-    state_test = state
-    #state_test[6:10] = q_act
-
-    for i in range(100):
-        Kp = np.diag([random.uniform(*Kp_range) for i in range(3)])
-        Kd = np.diag([random.uniform(*Kd_range) for i in range(3)])
+    for _ in range(1000):
+        Kp = np.diag([random.uniform(*Kp_range) for _ in range(3)])
+        Kd = np.diag([random.uniform(*Kd_range) for _ in range(3)])
 
         # build a full‐size state vector, sticking q_act into the quaternion slot
+        state_test = np.zeros(13)
+        state_test[6:10] = q_act
 
         # propagate that test state under your candidate thrusts `f`
-        #state_new = _dyn.propagate(state_test, f)
-        torque = computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d) 
-        f = np.linalg.solve(A_mat, np.hstack((T, torque)))
-
         state_new = _dyn.propagate(state_test, f)
+
         # pull out the new quaternion
         q_new = state_new[6:10]
+        
         # measure the new error
         qe_new = quaternionfunc.error(q_new, q_d)
 
@@ -73,7 +67,6 @@ def naiveComputeGains(q_act, q_d, state, w, w_d, T):
             q_e_opt = qe_new
             Kp_opt = Kp
             Kd_opt = Kd
-            #w_opt = w_new
 
     return Kp_opt, Kd_opt
 
@@ -158,4 +151,4 @@ def computeTorque(Kp, Kd, lambda_opt, q_act, q_d, w, w_d, Re):
 
     torque = -sgn * qe_mag * Kp * qe_vec - Kd * w_e - lambda_opt * sgn * qe_mag * q_deriv(1)
     return torque
-
+    
