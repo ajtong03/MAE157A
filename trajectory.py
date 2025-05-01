@@ -267,47 +267,14 @@ def get_thrust_vector_and_quaternion(t):
 thrust_vec, quat= get_thrust_vector_and_quaternion(tf)
 print('Thrust vector:', thrust_vec)
 print('Quaternion [x,y,z,w]', quat)
-
-dt = 0.01
-pos = []
-vel = []
-acc = []
-q_traj = []
-euler_ang = []
-for t in np.linspace(0, tf + tf1, 200):
-    if t <=tf:
-        x = x_t(t)
-        y = y_t(t)
-        z = z_t(t)
-        vx = vx_t(t)
-        vy = vy_t(t)
-        vz = vz_t(t)
-        ax = ax_t(t)
-        ay = ay_t(t)
-        az = az_t(t)
-    else: 
-        x = x_t1(tf1)
-        y = y_t1(tf1)
-        z = z_t1(tf1)
-        vx = vx_t1(tf1)
-        vy = vy_t1(tf1)
-        vz = vz_t1(tf1)
-        ax = ax_t1(tf1)
-        ay = ay_t1(tf1)
-        az = az_t1(tf1)
-
-pos.append([x,y,z])
-vel.append([vx,vy,vz])
-acc.append([ax,ay,az])
-thrust_vec = np.array([-ax,-ay,-(az + 9.81)])
-q = compute_orientation_quaternion(ax,ay,az)
-q_traj.append(q)
 '''
 
 # 3D Plot
 fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(traj, label='Drone Approach Trajectory')
+ax.plot(x_traj, y_traj, z_traj, label='Drone Approach Trajectory')
+# wip magnitudes of velocities and plot acceleration
+
 #ax.plot(x_traj_departure, y_traj_departure, z_traj_departure, label='Drone Departure Trajectory')
 ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 gate = np.array([
