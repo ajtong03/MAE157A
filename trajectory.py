@@ -4,8 +4,29 @@ from mpl_toolkits.mplot3d import Axes3D
 from math import sin,cos, tan
 from dynamics import dynamics   # import the class, not the module
 import matplotlib.animation as animation
-import quaternionfunc 
+from scipy.spatial.transform import Rotation as R
 
+#------ conversion--------------------------------
+def euler_to_quat(phi, theta, psi):
+    """
+    Convert Euler angles (roll=phi, pitch=theta, yaw=psi) to a quaternion [w, x, y, z].
+    """
+    w = cos(phi/2)*cos(theta/2)*cos(psi/2) + sin(phi/2)*sin(theta/2)*sin(psi/2)
+    x = sin(phi/2)*cos(theta/2)*cos(psi/2) - cos(phi/2)*sin(theta/2)*sin(psi/2)
+    y = cos(phi/2)*sin(theta/2)*cos(psi/2) + sin(phi/2)*cos(theta/2)*sin(psi/2)
+    z = cos(phi/2)*cos(theta/2)*sin(psi/2) - sin(phi/2)*sin(theta/2)*cos(psi/2)
+    return np.array([w, x, y, z])
+
+def quat_to_euler(q):
+    """
+    Convert quaternion q = [w, x, y, z] back to Euler angles (phi, theta, psi).
+    """
+    w, x, y, z = q
+    phi = np.arctan2(2*(w*x + y*z), 1 - 2*(x*x + y*y))
+    theta = np.arcsin(np.clip(2*(w*y - z*x), -1.0, 1.0))
+    psi = np.arctan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
+    return phi, theta, psi
+#-------polynomial tracking --------------------------------
 def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # 7th order polynomial
     A = np.array([
@@ -26,7 +47,6 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # Approach Segment 
 # Goal is to have drone go through origin (gate location)
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
-
 # x - axis
 tf = 8 # seconds
 time_approach = np.linspace(0, tf, 200)
@@ -134,8 +154,8 @@ def jz_t1(t):
 
 
 
-# Separately plot polynomials 
-
+# Separately plot polynomials (best to see distance it covers)
+'''
 # x - dir
 plt.figure(figsize=(8, 6))
 plt.plot(time_departure, [x_t(t) for t in time_departure], label="Position")
@@ -173,7 +193,7 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
-
+'''
 
 # plotting in 3D
 x_traj_approach = [x_t(t) for t in time_approach]
@@ -184,28 +204,83 @@ x_traj_departure = [x_t1(t) for t in time_departure]
 y_traj_departure = [y_t1(t) for t in time_departure]
 z_traj_departure = [z_t1(t) for t in time_departure]
 
-## working on getting desired orientation using the lecture notes
-'''
-def get_desired_orientation (theta, a_d)
-Rd = x_t + x_t1 + y_t + y_t1 + z_t + az_t1
-ad = ax_t + ax_t1 + ay_t + ay_t1 + az_t + ay_t1 + g
-    Td = Td/np.linalg.norm(Td)
-    ad = ad /np.linalg.norm(ad)
-    ad = 1/m * 
-    T_d = m * np.linalg.norm(ad)
-    n_vec
-
-Td = np.array([0,0,-1])
-'''
-
 
 
 #use this in main code to combine all polynomials, not sure if I wrote this function correctly lol 
 x_full_traj = x_traj_approach + x_traj_departure 
+print(x_full_traj)
 y_full_traj = y_traj_approach + y_traj_departure 
 z_full_traj = z_traj_approach + z_traj_departure
 
+# to obtain the correcet thrust orientation and aligned with gate
+def compute_orientation_quaternion(ax, ay, az):
+    thrust_vector = np.array([ax,ay,(az-9.81)])
+    thrust_unit = thrust_vector / np.linalg.norm(thrust_vector)
 
+    z_body = np.array([0,0,1])
+    cross_prod = np.cross(z_body, thrust_unit)
+    dot_prod = np.dot(z_body, thrust_unit)
+
+    if np.allclose(cross_prod, 0):
+        if dot_prod > 0:
+            return np,array([0,0,0,1])
+        else:
+            return np.array([1,0,0,0]) 
+            axis = cross_prod / np.linalg.norm(cross_prod)
+            angle = np.arccos(np.clip(dot_prod, -1,1))
+            return R.from_rotvec(angle*axis).as_quat()
+def get_thrust_vector_and_quaternion(t):
+    """Return thrust vector and orientation quaternion at time t."""
+    if t <= tf:
+        ax = ax_t(t)
+        ay = ay_t(t)
+        az = az_t(t)
+    else:
+        t1 = t - tf
+        ax = ax_t1(t1)
+        ay = ay_t1(t1)
+        az = az_t1(t1)
+
+    q = compute_orientation_quaternion(ax, ay, az)
+    return np.array([ax, ay, (az - 9.81)]), q
+thrust_vec, quat= get_thrust_vector_and_quaternion(tf)
+print('Thrust vector:', thrust_vec)
+print('Quaternion [x,y,z,w]', quat)
+
+dt = 0.01
+pos = []
+vel = []
+acc = []
+q_traj = []
+euler_ang = []
+for t in np.linspace(0, tf + tf1, 200):
+    if t <=tf:
+        x = x_t(t)
+        y = y_t(t)
+        z = z_t(t)
+        vx = vx_t(t)
+        vy = vy_t(t)
+        vz = vz_t(t)
+        ax = ax_t(t)
+        ay = ay_t(t)
+        az = az_t(t)
+    else: 
+        x = x_t1(tf1)
+        y = y_t1(tf1)
+        z = z_t1(tf1)
+        vx = vx_t1(tf1)
+        vy = vy_t1(tf1)
+        vz = vz_t1(tf1)
+        ax = ax_t1(tf1)
+        ay = ay_t1(tf1)
+        az = az_t1(tf1)
+
+pos.append([x,y,z])
+vel.append([vx,vy,vz])
+acc.append([ax,ay,az])
+thrust_vec = np.array([-ax,-ay,-(az + 9.81)])
+q = compute_orientation_quaternion(ax,ay,az)
+q_traj.append(q)
 
 
 # 3D Plot
@@ -213,7 +288,26 @@ fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(x_traj_approach, y_traj_approach, z_traj_approach, label='Drone Approach Trajectory')
 ax.plot(x_traj_departure, y_traj_departure, z_traj_departure, label='Drone Departure Trajectory')
-ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Location')  # gate at (0,0,1)
+ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
+gate = np.array([
+    [-0.5, 0, -0.25],
+    [ 0.5, 0, -0.25],
+    [ 0.5, 0,  0.25],
+    [-0.5, 0,  0.25],
+    [-0.5, 0, -0.25]  
+])
+
+# 45-degree rotation about Y-axis for gate
+theta = np.radians(45)
+ty = np.array([
+    [ np.cos(theta), 0, np.sin(theta)],
+    [ 0,             1, 0            ],
+    [-np.sin(theta), 0, np.cos(theta)]
+])
+
+# Rotate and translate gate to origin at (0,0,1)
+gate_pts = gate @ ty.T + np.array([0, 0, 1])
+ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], 'g-', lw=2)
 ax.set_xlim([-2, 2])
 ax.set_ylim([-2, 2])
 ax.set_zlim([0, 4]) 
