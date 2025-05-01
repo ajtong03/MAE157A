@@ -6,26 +6,6 @@ from dynamics import dynamics   # import the class, not the module
 import matplotlib.animation as animation
 from scipy.spatial.transform import Rotation as R
 
-#------ conversion--------------------------------
-def euler_to_quat(phi, theta, psi):
-    """
-    Convert Euler angles (roll=phi, pitch=theta, yaw=psi) to a quaternion [w, x, y, z].
-    """
-    w = cos(phi/2)*cos(theta/2)*cos(psi/2) + sin(phi/2)*sin(theta/2)*sin(psi/2)
-    x = sin(phi/2)*cos(theta/2)*cos(psi/2) - cos(phi/2)*sin(theta/2)*sin(psi/2)
-    y = cos(phi/2)*sin(theta/2)*cos(psi/2) + sin(phi/2)*cos(theta/2)*sin(psi/2)
-    z = cos(phi/2)*cos(theta/2)*sin(psi/2) - sin(phi/2)*sin(theta/2)*cos(psi/2)
-    return np.array([w, x, y, z])
-
-def quat_to_euler(q):
-    """
-    Convert quaternion q = [w, x, y, z] back to Euler angles (phi, theta, psi).
-    """
-    w, x, y, z = q
-    phi = np.arctan2(2*(w*x + y*z), 1 - 2*(x*x + y*y))
-    theta = np.arcsin(np.clip(2*(w*y - z*x), -1.0, 1.0))
-    psi = np.arctan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
-    return phi, theta, psi
 #-------polynomial tracking --------------------------------
 def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # 7th order polynomial
@@ -195,7 +175,9 @@ plt.grid(True)
 plt.show()
 '''
 
-# plotting in 3D
+
+# this was only for position need to get array of all directional trajectories including pos, vel,acc, and jerk
+'''
 x_traj_approach = [x_t(t) for t in time_approach]
 y_traj_approach = [y_t(t) for t in time_approach]
 z_traj_approach = [z_t(t) for t in time_approach]
@@ -203,16 +185,55 @@ z_traj_approach = [z_t(t) for t in time_approach]
 x_traj_departure = [x_t1(t) for t in time_departure]
 y_traj_departure = [y_t1(t) for t in time_departure]
 z_traj_departure = [z_t1(t) for t in time_departure]
+'''
+# Generate trajectory data for both segments
+x_traj_approach = [x_t(t) for t in time_approach]
+y_traj_approach = [y_t(t) for t in time_approach]
+z_traj_approach = [z_t(t) for t in time_approach]
+vx_traj_approach = [vx_t(t) for t in time_approach]
+vy_traj_approach = [vy_t(t) for t in time_approach]
+vz_traj_approach = [vz_t(t) for t in time_approach]
+ax_traj_approach = [ax_t(t) for t in time_approach]
+ay_traj_approach = [ay_t(t) for t in time_approach]
+az_traj_approach = [az_t(t) for t in time_approach]
+
+x_traj_departure = [x_t1(t) for t in time_departure]
+y_traj_departure = [y_t1(t) for t in time_departure]
+z_traj_departure = [z_t1(t) for t in time_departure]
+vx_traj_departure = [vx_t1(t) for t in time_departure]
+vy_traj_departure = [vy_t1(t) for t in time_departure]
+vz_traj_departure = [vz_t1(t) for t in time_departure]
+ax_traj_departure = [ax_t1(t) for t in time_departure]
+ay_traj_departure = [ay_t1(t) for t in time_departure]
+az_traj_departure = [az_t1(t) for t in time_departure]
 
 
 
-#use this in main code to combine all polynomials, not sure if I wrote this function correctly lol 
-x_full_traj = x_traj_approach + x_traj_departure 
-print(x_full_traj)
-y_full_traj = y_traj_approach + y_traj_departure 
-z_full_traj = z_traj_approach + z_traj_departure
 
-# to obtain the correcet thrust orientation and aligned with gate
+x_traj = np.concatenate((x_traj_approach, x_traj_departure))
+y_traj = np.concatenate((y_traj_approach, y_traj_departure))
+z_traj = np.concatenate((z_traj_approach, z_traj_departure))
+vx_traj = np.concatenate((vx_traj_approach, vx_traj_departure))
+vy_traj = np.concatenate((vy_traj_approach, vy_traj_departure))
+vz_traj = np.concatenate((vz_traj_approach, vz_traj_departure))
+ax_traj = np.concatenate((ax_traj_approach, ax_traj_departure))
+ay_traj = np.concatenate((ay_traj_approach, ay_traj_departure))
+az_traj = np.concatenate((az_traj_approach, az_traj_departure))
+
+time_full = np.concatenate((time_approach, time_departure + tf))
+
+# Columns: time, x, y, z, vx, vy, vz, ax, ay, az
+traj = np.column_stack((time_full,
+                        x_traj, y_traj, z_traj,
+                        vx_traj, vy_traj, vz_traj,
+                        ax_traj, ay_traj, az_traj))
+
+print(traj)
+'''
+#use this in main code to combine all polynomials
+
+
+# to obtain the correcet thrust orientation and aligned with gate, this is a wip
 def compute_orientation_quaternion(ax, ay, az):
     thrust_vector = np.array([ax,ay,(az-9.81)])
     thrust_unit = thrust_vector / np.linalg.norm(thrust_vector)
@@ -281,13 +302,13 @@ acc.append([ax,ay,az])
 thrust_vec = np.array([-ax,-ay,-(az + 9.81)])
 q = compute_orientation_quaternion(ax,ay,az)
 q_traj.append(q)
-
+'''
 
 # 3D Plot
 fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(x_traj_approach, y_traj_approach, z_traj_approach, label='Drone Approach Trajectory')
-ax.plot(x_traj_departure, y_traj_departure, z_traj_departure, label='Drone Departure Trajectory')
+ax.plot(traj, label='Drone Approach Trajectory')
+#ax.plot(x_traj_departure, y_traj_departure, z_traj_departure, label='Drone Departure Trajectory')
 ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 gate = np.array([
     [-0.5, 0, -0.25],
