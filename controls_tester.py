@@ -2,6 +2,7 @@ import numpy as np
 import random
 from dynamics import dynamics   # import the class, not the module
 import quaternionfunc as qf
+import controller as ctrl
 
 # make a local dynamics instance (match your main’s params & dt!)
 _dyn = dynamics(params=[9.81], dt=1.0/50.0)
@@ -11,7 +12,7 @@ def posController(traj):
     traj_length = len(traj)
 
     # just test 30 points
-    num_points = 30
+    num_points = traj_length
     inc = round(traj_length / num_points)
     attitude = [[0 for _ in range(3)] for _ in range(num_points)]
 
@@ -24,7 +25,7 @@ def posController(traj):
         attitude[i] = [roll, pitch, yaw]
     return attitude
 
-def attController(attitude):
+def attController(self, attitude):
     # n is the number of gain combos to try
     n = 100
     max_errors =  np.zeros(n)
@@ -33,7 +34,9 @@ def attController(attitude):
     Kp_range = (1, 10)
     Kd_range = (1, 10)
 
+
     for i in range(n):
+        stateNew = self.state
         Kp = np.diag([random.uniform(*Kp_range) for i in range(3)])
         Kd = np.diag([random.uniform(*Kd_range) for i in range(3)])
         gains[i] = [Kp, Kd]
@@ -41,13 +44,19 @@ def attController(attitude):
         error = np.zeros(attitude.len)
         for j in attitude:
             roll, pitch, yaw = attitude[j]
-
+            
+            testState = stateNew
             q_d = qf.euler_to_quat(roll, pitch, yaw)
             # get actual from prop fxn in dynamics
-            #REPLACE THIS
-            q_a = 1
+            torque = ctrl.computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
+
+            # NEED TO FIGURE OUT HOW TO GET f
+            f = np.linalg.solve(A_mat, np.hstack((T, torque)))
+            stateNew = _dyn.propagate(testState, f)
+            q_a = stateNew[10:13] 
 
             temp = qf.error(q_a, q_d)
+
             # store the magnitude of the error
             error[j] = np.linalg.norm(temp)
         
@@ -59,9 +68,6 @@ def attController(attitude):
 
     return Kp_opt, Kd_opt
 
-
-        
-        
 
 def compute_euler_angles(pos, vel, accel, gravity=np.array([0, 0, -9.81])):
     # Normalize forward direction (velocity)
@@ -86,7 +92,6 @@ def compute_euler_angles(pos, vel, accel, gravity=np.array([0, 0, -9.81])):
     phi = np.atan2(R(2,3), R(1,3)) 
     theta = np.asin(-R(3,3)) 
     psi = np.atan2(R(3,2), R(3,1)) 
-   
 
     return phi, theta, psi # Optional: return in any order you prefer
 

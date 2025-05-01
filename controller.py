@@ -1,3 +1,4 @@
+# IGNORE CONTROLLER STUFF IN THIS FILE. IT IS INCORRECT
 import numpy as np
 import random
 from dynamics import dynamics   # import the class, not the module
