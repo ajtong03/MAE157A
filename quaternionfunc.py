@@ -42,3 +42,42 @@ def euler_to_quat(phi, theta, psi):
     y = np.cos(phi/2)*np.sin(theta/2)*np.cos(psi/2) + np.sin(phi/2)*np.cos(theta/2)*np.sin(psi/2)
     z = np.cos(phi/2)*np.cos(theta/2)*np.sin(psi/2) - np.sin(phi/2)*np.sin(theta/2)*np.cos(psi/2)
     return np.array([w, x, y, z])
+
+def unitQuat(q):
+    if abs(np.linalg.norm(q)) == 0:
+      return np.array([0.0, 0.0, 0.0, 0.0])  # Avoid division by zero, return identity quaternion
+  
+    return q / np.linalg.norm(q)
+
+# https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
+def R_to_quat(R):
+
+    # R must be an array so can do transpose
+    if type(R) != np.ndarray:
+        R = np.array(R)
+
+    # take transpose
+    r0, r1, r2 = R.T
+    m00, m01, m02 = r0
+    m10, m11, m12 = r1
+    m20, m21, m22 = r2
+    
+    if m22 < 0:
+        if m00 > m11:
+            t = 1 + m00 - m11 - m22
+            q = np.array([t, m01 + m10, m20 + m02, m12 - m21])
+        else:
+            t = 1 - m00 + m11 - m22
+            q = np.array([m01 + m10, t, m12 + m21, m20 - m02])
+    else:
+        if m00 < -m11:
+            t = 1 - m00 - m11 + m22
+            q = np.array([m20 + m02, m12 + m21, t, m01 - m10])
+        else:
+            t = 1 + m00 + m11 + m22
+            q = np.array([m12 - m21, m20 - m02, m01 - m10, t])
+
+    q *= 1 / 2 / np.sqrt(t)
+
+    return np.array([q[3], q[0], q[1], q[2]])
+
