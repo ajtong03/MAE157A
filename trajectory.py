@@ -48,7 +48,7 @@ def jx_t(t):
 
 # y - dir
 # focus on y accel (make sure orientation lines up)
-c_y = solve_polynomial_coefficients(tf, -1.5 , 0 ,0, 0, 0, 1.4142,0.5, 0 )
+c_y = solve_polynomial_coefficients(tf, -1.5 , 0 ,0, 0, 0, 1.4142, 1.2, 0 )
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
@@ -102,7 +102,7 @@ def jx_t1(t):
 
 
 # y - dir
-c_y1 = solve_polynomial_coefficients(tf1, 0 , 1.4142 ,0.5, 0, 1.5, 0, 0, 0 )
+c_y1 = solve_polynomial_coefficients(tf1, 0 , 1.4142 ,1.2, 0, 1.5, 0, 0, 0 )
 print("y-coeffs:", c_y1)
 def y_t1(t):
     return c_y1[0] + c_y1[1] * t + c_y1[2] * t**2 + c_y1[3] * t**3 + c_y1[4] * t**4 + c_y1[5] * t**5 + c_y1[6] * t**6 + c_y1[7] * t**7
@@ -136,38 +136,13 @@ def jz_t1(t):
 
 # Separately plot polynomials (best to see distance it covers)
 '''
-# x - dir
+# change as necessary
 plt.figure(figsize=(8, 6))
 plt.plot(time_departure, [x_t(t) for t in time_departure], label="Position")
 plt.plot(time_departure, [vx_t(t) for t in time_departure], label="Velocity")
-#plt.plot(time_values, [ax_t(t) for t in time_approach], label="Acceleration")
-#plt.plot(time_values, [jx_t(t) for t in time_values], label = "Jerk")
+#plt.plot(time_values, [ax_t(t) for t in time_departure], label="Acceleration")
+#plt.plot(time_values, [jx_t(t) for t in time_departure], label = "Jerk")
 plt.title("X-Direction Trajectory (departure segment)")
-plt.xlabel("Time (s)")
-plt.ylabel("Value")
-plt.legend()
-plt.grid(True)
-plt.show()
-
-# y-dir
-plt.figure(figsize=(8, 6))
-plt.plot(time_departure, [y_t(t) for t in time_departure], label="Position")
-plt.plot(time_departure, [vy_t(t) for t in time_departure], label="Velocity")
-plt.plot(time_departure, [ay_t(t) for t in time_departure], label="Acceleration")
-plt.title("Y-Direction Trajectory (approach segment)")
-plt.xlabel("Time (s)")
-plt.ylabel("Value")
-plt.legend()
-plt.grid(True)
-plt.show()
-
-# z-dir
-
-plt.figure(figsize=(8, 6))
-plt.plot(time_departure, [z_t(t) for t in time_departure], label="Position")
-plt.plot(time_departure, [vz_t(t) for t in time_departure], label="Velocity")
-plt.plot(time_departure, [az_t(t) for t in time_departure], label="Acceleration")
-plt.title("Z-Direction Trajectory (departure segment)")
 plt.xlabel("Time (s)")
 plt.ylabel("Value")
 plt.legend()
@@ -207,9 +182,6 @@ ax_traj_departure = [ax_t1(t) for t in time_departure]
 ay_traj_departure = [ay_t1(t) for t in time_departure]
 az_traj_departure = [az_t1(t) for t in time_departure]
 
-
-
-
 x_traj = np.concatenate((x_traj_approach, x_traj_departure))
 y_traj = np.concatenate((y_traj_approach, y_traj_departure))
 z_traj = np.concatenate((z_traj_approach, z_traj_departure))
@@ -229,11 +201,11 @@ traj = np.column_stack((time_full,
                         ax_traj, ay_traj, az_traj))
 
 print(traj)
+v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
+
+
 '''
-#use this in main code to combine all polynomials
-
-
-# to obtain the correcet thrust orientation and aligned with gate, this is a wip
+# WIP to obtain the correct thrust orientation and aligned with gate, this is a wip
 def compute_orientation_quaternion(ax, ay, az):
     thrust_vector = np.array([ax,ay,(az-9.81)])
     thrust_unit = thrust_vector / np.linalg.norm(thrust_vector)
@@ -273,9 +245,12 @@ print('Quaternion [x,y,z,w]', quat)
 fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(x_traj, y_traj, z_traj, label='Drone Approach Trajectory')
-# wip magnitudes of velocities and plot acceleration
-
-#ax.plot(x_traj_departure, y_traj_departure, z_traj_departure, label='Drone Departure Trajectory')
+# wip magnitudes of acceleration
+skip =5
+ax.quiver(
+    x_traj[::skip], y_traj[::skip], z_traj[::skip],
+    ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
+    length=0.2, normalize=True, color='r', label='acceleration vectors')
 ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 gate = np.array([
     [-0.5, 0, -0.25],
@@ -295,7 +270,15 @@ ty = np.array([
 
 # Rotate and translate gate to origin at (0,0,1)
 gate_pts = gate @ ty.T + np.array([0, 0, 1])
+gate_normal = np.array([0, 0, 1]) @ ty.T
+gate_normal = gate_normal / np.linalg.norm(gate_normal)
 ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], 'g-', lw=2)
+ax.quiver(
+    0, 0, 1,                    
+    gate_normal[0], gate_normal[1], gate_normal[2],  # Components
+    length=0.5, color='purple', linewidth=2, label='Gate Normal'
+)
+
 ax.set_xlim([-2, 2])
 ax.set_ylim([-2, 2])
 ax.set_zlim([0, 4]) 
