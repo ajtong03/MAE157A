@@ -23,9 +23,8 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
     b = np.array([p0, v0, a0, j0, pf, vf, af, jf])
     c = np.linalg.solve(A, b)
     return c
-
+# since T = m*g our total thrust must be > 8.30907 N to lift
 # Approach Segment 
-# Goal is to have drone go through origin (gate location)
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
 # x - axis
 tf = 8 # seconds
@@ -48,7 +47,7 @@ def jx_t(t):
 
 # y - dir
 # focus on y accel (make sure orientation lines up)
-c_y = solve_polynomial_coefficients(tf, -1.5 , 0 ,0, 0, 0, 1.4142, 1.2, 0 )
+c_y = solve_polynomial_coefficients(tf, -1.5 , 0 ,0, 0, 0, 1.4142, 2, 0 )
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
@@ -102,7 +101,7 @@ def jx_t1(t):
 
 
 # y - dir
-c_y1 = solve_polynomial_coefficients(tf1, 0 , 1.4142 ,1.2, 0, 1.5, 0, 0, 0 )
+c_y1 = solve_polynomial_coefficients(tf1, 0 , 1.4142 ,2, 0, 1.5, 0, 0, 0 )
 print("y-coeffs:", c_y1)
 def y_t1(t):
     return c_y1[0] + c_y1[1] * t + c_y1[2] * t**2 + c_y1[3] * t**3 + c_y1[4] * t**4 + c_y1[5] * t**5 + c_y1[6] * t**6 + c_y1[7] * t**7
@@ -200,10 +199,16 @@ traj = np.column_stack((time_full,
                         vx_traj, vy_traj, vz_traj,
                         ax_traj, ay_traj, az_traj))
 
-print(traj)
+# print(traj)
 v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
+# total thrust 
+m = 0.847 
+g = 9.81
+T_vector = np.vstack(m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2))
+T_mag = np.linalg.norm(T_vector, axis=0)
 
-
+print('Thrust Vector: ',T_vector)
+print('Thrust Mag: ', T_mag)
 '''
 # WIP to obtain the correct thrust orientation and aligned with gate, this is a wip
 def compute_orientation_quaternion(ax, ay, az):
@@ -251,6 +256,7 @@ ax.quiver(
     x_traj[::skip], y_traj[::skip], z_traj[::skip],
     ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
     length=0.2, normalize=True, color='r', label='acceleration vectors')
+# Gate
 ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 gate = np.array([
     [-0.5, 0, -0.25],
