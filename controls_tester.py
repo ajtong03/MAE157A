@@ -27,7 +27,7 @@ def posController1(traj):
         attitude[i] = [roll, pitch, yaw]
     return attitude
 
-#------------------------------ POSITION CONTROLLER---------------------------#
+#----------------------------------- POSITION CONTROLLER--------------------------------#
 #-----takes the trajectory and ouutputs the corresponding attitude values and thrust-----
 def posController2(state, p_d, v_d):
     Kp = constants.Kp_p
@@ -41,7 +41,7 @@ def posController2(state, p_d, v_d):
     v_e = v_d - v
 
     # compute force
-    # ACCEL TERM ??
+    # ACCEL TERM ?
     F_des = -np.matmul(Kp, p_e) - np.matmul(Kd, v_e) + np.arr([0, 0, _dyn.g])
 
     # check that this doesn't exceed max thrust
@@ -52,6 +52,7 @@ def posController2(state, p_d, v_d):
 
     
     # compute desired quaternion using orthogonality
+    # is this the proper way to find q_d or is posController1 the correct way?
     z_hat = qf.unitQuat(F_des)
     x_hat =qf.unitQuat(np.cross(z_hat, np.cross(np.array([1,0,0]), z_hat)))
     y_hat = qf.unitQuat(np.cross(z_hat, x_hat))
@@ -64,7 +65,7 @@ def posController2(state, p_d, v_d):
 
     return q_d, thrust
 
-#---------------ATTITUDE CONTROLLER------------------------
+#-------------------------ATTITUDE CONTROLLER----------------------------------#
 def attController(state, q_d, w_d):
     Kp = constants.Kp_a
     Kd = constants.Kd_a
@@ -75,7 +76,7 @@ def attController(state, q_d, w_d):
     return torque
 
 
-#------------------------------ GAIN FINDER ---------------------------#
+#-------------------------------------------------- GAIN FINDER -----------------------------------------------#
 #given desired attitude values, the optimal gains are found. these gains will be constant for all trajectories
 def setAttController(state, attitude, thrust):
     # n is the number of gain combos to try
@@ -99,7 +100,7 @@ def setAttController(state, attitude, thrust):
             
             testState = stateNew
             q_d = qf.euler_to_quat(roll, pitch, yaw)
-            # get actual from prop fxn in dynamics
+            # FIGURE OUT -> get actual from prop fxn in dynamics
             torque = computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
 
             # Obtain motor forces so new state can be propogated
@@ -120,7 +121,7 @@ def setAttController(state, attitude, thrust):
 
     return Kp_opt, Kd_opt
 
-#----------COMPUTE MOTOR FORCES GIVEN CONTROL GAINS AND RESULTANT TORQUES----------
+#----------COMPUTE MOTOR FORCES GIVEN CONTROL GAINS AND RESULTANT TORQUES----------#
 def getForces(gains, torque, thrust):
     kp, kd = gains
     alloc_matrix = setAllocMat(kd)
@@ -138,7 +139,7 @@ def getForces(gains, torque, thrust):
     return f
 
 
-#--------------COMPUTE TORQUES----------------
+#------------------------COMPUTE TORQUES--------------------------#
 def computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d):
     q_e = qf.error(q_act, q_d)
     w_e = w - w_d
