@@ -194,7 +194,7 @@ def compute_orientation_quaternion(ax, ay, az):
 
     if np.allclose(cross_prod, 0):
         if dot_prod > 0:
-            return np,array([0,0,0,1])
+            return np.array([0,0,0,1])
         else:
             return np.array([1,0,0,0]) 
             axis = cross_prod / np.linalg.norm(cross_prod)

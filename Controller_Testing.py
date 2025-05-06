@@ -31,13 +31,19 @@ state[4] = 0.
 state[5] = 0.
 
 # 10 degrees off vertical
-pitch = 10 * np.pi / 180
-q = quaternionfunc.euler_to_quat(0, pitch, 0)
+# pitch = 10 * np.pi / 180
+#q = quaternionfunc.euler_to_quat(0, pitch, 0)
 # qw, qx, qy, qz
+'''
 state[6] = q[0]
 state[7] = q[1]
 state[8] = q[2]
 state[9] = q[3]
+'''
+state[6] = 1
+state[7] = 0
+state[8] = 0
+state[9] = 0
 
 # wx, wy, wz
 state[10] = 0.
@@ -45,7 +51,7 @@ state[11] = 0.
 state[12] = 0.
 
 # Final time
-tf = 10.
+tf = 6.
 
 # Simulation rate
 rate = 500
@@ -75,10 +81,10 @@ target_state[0] = 2
 target_state[1] = 2
 target_state[2] = 2
 
-target_state[6] = 1.
-target_state[7] = 0.
-target_state[8] = 0.
-target_state[9] = 0.
+target_state[6] = 3
+target_state[7] = 3
+target_state[8] = 4
+target_state[9] = 5
 
 #Kp = np.diag([3, 3, 3])
 #Kd = np.diag([2, 2, 2])
@@ -89,21 +95,20 @@ q_d = target_state[6:10]
 err = quaternionfunc.error(state[6:10], q_d)
 error_data = np.append(t, err)
 
-#Kp, Kd = att.setAttController2(state, q_d)
-#print(Kd)
-#print(Kp)
 
-# 5.218081614545586
-# 5.913484619280134
-# 6.091488660131964
-# 4.879255156420367
+#Kp, Kd = att.setAttController2(state, q_d)
+#print(Kp)
+#print(Kd)
+
 # Simulation loop
 running = True
 while running:
 
     # Propagate dynamics with control inputs
-    Kp = np.diag([20, 20, 20])
-    Kd = np.diag([2, 2.5, 2])
+    Kp = np.diag([15, 9, 10])
+    Kd = np.diag([40.5, 40, 40.5])
+    #Kp = np.diag([5, 5, 5])
+    #Kd = np.diag([2.5, 2, 2.5])
 
     torque = att.attController(state, target_state, Kp, Kd)
     # set thrust so z component equals gravity
@@ -111,15 +116,19 @@ while running:
     new_state = dyn.propagate(state, f, dt)
     q_e = quaternionfunc.error(state[6:10], q_d)
 
+    '''
     print('states')
     print(state[6:10])
     print(new_state[6:10])
     print('error')
     print(q_e)
+    '''
     # If z too low then indicate crash and end simulation
+    '''
     if state[2] < 0.1:
         print("CRASH!!!")
         break
+    '''
     
     state = new_state
 

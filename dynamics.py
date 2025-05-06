@@ -55,7 +55,7 @@ class dynamics:
         domega = np.linalg.inv(self.J) @ (M + np.cross(-omega, self.J @ omega))
 
         # Quaternion kinematics
-        qw, qx, qy, qz = q
+        # qw, qx, qy, qz = q
         '''
         Omega = np.array([
             [0,      -omega[0], -omega[1], -omega[2]],
@@ -64,7 +64,7 @@ class dynamics:
             [omega[2],  omega[1], -omega[0], 0]
         ])
         '''
-        omega_q = np.array([0, omega[0], omega[1], omega[2]])
+        omega_q = np.array([0, *omega])
         dq = 0.5 * qf.product(q, omega_q)
         rates = np.zeros(13)
         rates[0:3]   = state[3:6]    # velocity
@@ -79,7 +79,8 @@ class dynamics:
         step = dt if dt is not None else self.dt
         #breakpoint()
         newState = state + step * self.rates(state, f)
-        return newState / np.linalg.norm(newState)
+        newState[6:10] = newState[6:10] / np.linalg.norm(newState[6:10])
+        return newState
    
     @staticmethod
     def quat_to_rot(q):

@@ -38,7 +38,7 @@ class AttitudeController:
         return torque
 
 
-    #-------------------------------------------------- GAIN FINDER -----------------------------------------------#
+    #-------------------------------------------------- GAIN FINDER GIVEN FULL TRAJECTORY-----------------------------------------------#
     #given desired attitude values from position controller, the optimal gains are found. these gains will be constant for all trajectories
     def setAttController(self, state, attitude, thrust):
         # n is the number of gain combos to try
@@ -46,8 +46,8 @@ class AttitudeController:
         max_errors =  np.zeros(n)
         gains = np.zeros((n, 2))
 
-        Kp_range = (1, 10)
-        Kd_range = (1, 10)
+        Kp_range = (1, 25)
+        Kd_range = (1, 25)
 
 
         for i in range(n):
@@ -86,7 +86,9 @@ class AttitudeController:
         Kd_opt = gains[index_min][1]
 
         return Kp_opt, Kd_opt
-    
+
+#-------------------------------------------------- GAIN FINDER GIVEN SINGLE ATTITUDE GOAL-----------------------------------------------#
+    #given desired attitude value,  optimal gains are found. these gains will be constant for all trajectories 
     def setAttController2(self, state, attitude):
         dynam = dyn(np.array([9.81]), self.dt)
         # n is the number of gain combos to try
@@ -94,8 +96,8 @@ class AttitudeController:
         max_errors =  np.zeros(n)
         gains = np.zeros((n, 2))
 
-        Kp_range = (1, 10)
-        Kd_range = (1, 10)
+        Kp_range = (1, 50)
+        Kd_range = (1, 50)
 
         max_errors = np.zeros(n)
         
@@ -167,7 +169,6 @@ class AttitudeController:
         # vector part
         vec = q_e[1:]
 
-        # DO THE ERRORS NEED TO BE TRANSPOSED
         torque = -alpha * np.matmul(Kp, vec) - np.matmul(Kd, w_e)
         return np.array(torque)
 
