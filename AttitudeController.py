@@ -90,7 +90,7 @@ class AttitudeController:
     def setAttController2(self, state, attitude):
         dynam = dyn(np.array([9.81]), self.dt)
         # n is the number of gain combos to try
-        n = 100
+        n = 500
         max_errors =  np.zeros(n)
         gains = np.zeros((n, 2))
 
@@ -98,8 +98,9 @@ class AttitudeController:
         Kd_range = (1, 10)
 
         max_errors = np.zeros(n)
-
-        testState = state
+        
+        t = 0
+        tf = 5
         for i in range(n):
             Kp = np.diag([np.random.uniform(*Kp_range) for i in range(3)])
             Kd = np.diag([np.random.uniform(*Kd_range) for i in range(3)])
@@ -108,21 +109,29 @@ class AttitudeController:
             gains[i] =[kpval, kdval]
 
             q_d = attitude
-                
-            torque = self.computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
-            # Obtain motor forces so new state can be propogated
-            f = self.getForces(torque)
-            # print(f)
-            print('start')
-            print(testState[6:10])
-            state_new = dynam.propagate(testState, f, self.dt)
-            q_a = state_new[6:10] 
-            print(q_a)
-            err = qf.error(q_a, q_d)
-
-            # store the magnitude of the error
-            err = np.linalg.norm(err)
-            max_errors[i] = err
+            err_min = np.linalg.norm(qf.error(state[6:10], q_d))
+            testState = state
+            while t < tf:
+                torque = self.computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
+                # Obtain motor forces so new state can be propogated
+                f = self.getForces(torque)
+                # print('forces')
+                # print(f)
+                print('states')
+                print(testState[6:10])
+                newState = dynam.propagate(testState, f, self.dt)
+                q_a = newState[6:10] 
+                print(q_a)
+                err = qf.error(q_a, q_d)
+                print('error')
+                # store the magnitude of the error
+                err = np.linalg.norm(err)
+                print(err)
+                if err < err_min:
+                    err_min = err
+                t += self.dt
+                testState = newState
+            max_errors[i] = err_min
         
         index_min = np.argmin(max_errors)
         Kp_opt = gains[index_min][0]

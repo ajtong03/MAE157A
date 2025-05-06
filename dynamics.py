@@ -66,20 +66,20 @@ class dynamics:
         '''
         omega_q = np.array([0, omega[0], omega[1], omega[2]])
         dq = 0.5 * qf.product(q, omega_q)
-
         rates = np.zeros(13)
         rates[0:3]   = state[3:6]    # velocity
         rates[3:6]   = acc          # acceleration
         rates[6:10]  = dq           # quaternion rate
         rates[10:13] = domega       # angular acceleration
+        # print(rates)
         return rates
 
     # RK4 propogate
     def propagate(self, state, f, dt=None):
         step = dt if dt is not None else self.dt
-        breakpoint()
-        return state + step * self.rates(state, f)
-    
+        #breakpoint()
+        newState = state + step * self.rates(state, f)
+        return newState / np.linalg.norm(newState)
    
     @staticmethod
     def quat_to_rot(q):

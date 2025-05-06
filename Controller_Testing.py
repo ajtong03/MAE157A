@@ -89,24 +89,33 @@ q_d = target_state[6:10]
 err = quaternionfunc.error(state[6:10], q_d)
 error_data = np.append(t, err)
 
-Kp, Kd = att.setAttController2(state, q_d)
-print(Kd)
-print(Kp)
+#Kp, Kd = att.setAttController2(state, q_d)
+#print(Kd)
+#print(Kp)
 
-
+# 5.218081614545586
+# 5.913484619280134
+# 6.091488660131964
+# 4.879255156420367
 # Simulation loop
 running = True
 while running:
 
     # Propagate dynamics with control inputs
-    Kp = np.diag([4.985, 4.985, 4.985])
-    Kd = np.diag([8.648, 8.648, 8.648])
+    Kp = np.diag([20, 20, 20])
+    Kd = np.diag([2, 2.5, 2])
 
     torque = att.attController(state, target_state, Kp, Kd)
     # set thrust so z component equals gravity
     f = att.getForces(torque)
     new_state = dyn.propagate(state, f, dt)
     q_e = quaternionfunc.error(state[6:10], q_d)
+
+    print('states')
+    print(state[6:10])
+    print(new_state[6:10])
+    print('error')
+    print(q_e)
     # If z too low then indicate crash and end simulation
     if state[2] < 0.1:
         print("CRASH!!!")
