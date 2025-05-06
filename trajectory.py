@@ -58,7 +58,7 @@ def jy_t(t):
 
 # z - dir 
 # accel how fast v_z is accelerating up/down
-c_z = solve_polynomial_coefficients(tf, 0, 0, 0, 0, 1, 0.1, 0, 0 )
+c_z = solve_polynomial_coefficients(tf, 0, 0, 0, 0, 1, 0.5, 0, 0 )
 print("z-coeffs:", c_z)
 # needs to counteract gravity in this case
 def z_t(t):
@@ -177,6 +177,8 @@ v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
 # total thrust 
 m = 0.847 
 g = 9.81
+###
+
 T_vector = np.vstack(m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2))
 T_mag = np.linalg.norm(T_vector, axis=0)
 
@@ -201,6 +203,9 @@ def compute_orientation_quaternion(ax, ay, az):
             angle = np.arccos(np.clip(dot_prod, -1,1))
             return R.from_rotvec(angle*axis).as_quat()
 '''
+WIP 
+def check_motor_thrust
+    
 def get_thrust_vector_and_quaternion(t):
     """Return thrust vector and orientation quaternion at time t."""
     if t <= tf:
@@ -222,7 +227,7 @@ print('Quaternion [x,y,z,w]', quat)
 # 3D Plot
 fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(x_traj, y_traj, z_traj, color='blue',label='Drone Approach Trajectory')
+ax.plot(x_traj, y_traj, z_traj, color='blue',label='Drone Trajectory')
 # wip magnitudes of acceleration
 skip =5
 ax.quiver(
