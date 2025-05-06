@@ -23,101 +23,86 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
     b = np.array([p0, v0, a0, j0, pf, vf, af, jf])
     c = np.linalg.solve(A, b)
     return c
-
+# since T = m*g our total thrust must be > 8.30907 N to lift
 # Approach Segment 
-# Goal is to have drone go through origin (gate location)
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
 # x - axis
-tf = 8 # seconds
+tf = 6 # seconds
 time_approach = np.linspace(0, tf, 200)
 
-c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 1.25, 0.5, 0 )
+c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 1.5, 0.5, 0)
 # acceleration must be zero (so it doesnt move forward or backwards going through gate)
 print("x-coeffs:", c_x)
 def x_t(t):
     return c_x[0] + c_x[1] * t + c_x[2] * t**2 + c_x[3] * t**3 + c_x[4] * t**4 + c_x[5] * t**5 + c_x[6] * t**6 + c_x[7] * t**7
 def vx_t(t):
     return c_x[1] + 2 * c_x[2] * t + 3 * c_x[3] * t**2 + 4 * c_x[4] * t**3 + 5 * c_x[5] * t**4 + 6 * c_x[6] * t**5 + 7 * c_x[7] * t**6
-
 def ax_t(t):
     return 2 * c_x[2] + 6 * c_x[3] * t + 12 * c_x[4] * t**2 + 20 * c_x[5] * t**3 + 30 * c_x[6] * t**4 + 42 * c_x[7] * t**5 
-
 def jx_t(t):
     return 6 * c_x[3] + 24 * c_x[4] * t + 60 * c_x[5] * t**2 + 120 * c_x[6] * t**3 + 210 * c_x[7] * t**4
 
-
 # y - dir
 # focus on y accel (make sure orientation lines up)
-c_y = solve_polynomial_coefficients(tf, -1.5 , 0 ,0, 0, 0, 1.4142, 1.2, 0 )
+# remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
+c_y = solve_polynomial_coefficients(tf,-1.5, 0, 0, 0, 0, 1.15, 0.8, 0)
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
 def vy_t(t):
     return c_y[1] + 2 * c_y[2] * t + 3 * c_y[3] * t**2 + 4 * c_y[4] * t**3 + 5 * c_y[5] * t**4 + 6 * c_y[6] * t**5 + 7 * c_y[7] * t**6
-
 def ay_t(t):
     return 2 * c_y[2] + 6 * c_y[3] * t + 12 * c_y[4] * t**2 + 20 * c_y[ 5] * t**3 + 30 * c_y[6] * t**4 + 42 * c_y[7] * t**5 
-
 def jy_t(t):
     return 6 * c_y[3] + 24 * c_y[4] * t + 60 * c_y[5] * t**2 + 120 * c_y[6] * t**3 + 210 * c_y[7] * t**4
 
-
 # z - dir 
 # accel how fast v_z is accelerating up/down
-c_z = solve_polynomial_coefficients(tf, 0, 0, 0, 0, 1, 0, 0, 0 )
+c_z = solve_polynomial_coefficients(tf, 0, 0, 0, 0, 1, 0.1, 0, 0 )
 print("z-coeffs:", c_z)
-# remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 # needs to counteract gravity in this case
 def z_t(t):
     return c_z[0] + c_z[1] * t + c_z[2] * t**2 + c_z[3] * t**3 + c_z[4] * t**4 + c_z[5] * t**5 + c_z[6] * t**6 + c_z[7] * t**7
 def vz_t(t):
     return c_z[1] + 2 * c_z[2] * t + 3 * c_z[3] * t**2 + 4 * c_z[4] * t**3 + 5 * c_z[5] * t**4 + 6 * c_z[6] * t**5 + 7 * c_z[7] * t**6
-
 def az_t(t):
     return 2 * c_z[2] + 6 * c_z[3] * t + 12 * c_z[4] * t**2 + 20 * c_z[ 5] * t**3 + 30 * c_z[6] * t**4 + 42 * c_z[7] * t**5 
-
 def jz_t(t):
     return 6 * c_z[3] + 24 * c_z[4] * t + 60 * c_z[5] * t**2 + 120 * c_z[6] * t**3 + 210 * c_z[7] * t**4
 
 
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
-tf1 =  5 # seconds
+tf1 =  4.55 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 1.25, 0.5, 0, -1.5, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, 1.5, 0.5, 0, -1.5, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
     return c_x1[0] + c_x1[1] * t + c_x1[2] * t**2 + c_x1[3] * t**3 + c_x1[4] * t**4 + c_x1[5] * t**5 + c_x1[6] * t**6 + c_x1[7] * t**7
 def vx_t1(t):
     return c_x1[1] + 2 * c_x1[2] * t + 3 * c_x1[3] * t**2 + 4 * c_x1[4] * t**3 + 5 * c_x1[5] * t**4 + 6 * c_x1[6] * t**5 + 7 * c_x1[7] * t**6
-
 def ax_t1(t):
     return 2 * c_x1[2] + 6 * c_x1[3] * t + 12 * c_x1[4] * t**2 + 20 * c_x1[5] * t**3 + 30 * c_x1[6] * t**4 + 42 * c_x1[7] * t**5 
-
 def jx_t1(t):
     return 6 * c_x1[3] + 24 * c_x1[4] * t + 60 * c_x1[5] * t**2 + 120 * c_x1[6] * t**3 + 210 * c_x1[7] * t**4
 
-
 # y - dir
-c_y1 = solve_polynomial_coefficients(tf1, 0 , 1.4142 ,1.2, 0, 1.5, 0, 0, 0 )
+c_y1 = solve_polynomial_coefficients(tf1, 0 , 1.15, 0.8, 0, 1.25, 0, 0, 0 )
 print("y-coeffs:", c_y1)
 def y_t1(t):
     return c_y1[0] + c_y1[1] * t + c_y1[2] * t**2 + c_y1[3] * t**3 + c_y1[4] * t**4 + c_y1[5] * t**5 + c_y1[6] * t**6 + c_y1[7] * t**7
 def vy_t1(t):
     return c_y1[1] + 2 * c_y1[2] * t + 3 * c_y1[3] * t**2 + 4 * c_y1[4] * t**3 + 5 * c_y1[5] * t**4 + 6 * c_y1[6] * t**5 + 7 * c_y1[7] * t**6
-
 def ay_t1(t):
     return 2 * c_y1[2] + 6 * c_y1[3] * t + 12 * c_y1[4] * t**2 + 20 * c_y1[ 5] * t**3 + 30 * c_y1[6] * t**4 + 42 * c_y1[7] * t**5 
-
 def jy_t1(t):
     return 6 * c_y1[3] + 24 * c_y1[4] * t + 60 * c_y1[5] * t**2 + 120 * c_y1[6] * t**3 + 210 * c_y1[7] * t**4
 
-
 # z - dir 
-c_z1 = solve_polynomial_coefficients(tf1, 1, 0 ,0, 0, 0, 0, 0, 0 )
+c_z1 = solve_polynomial_coefficients(tf1, 1, 0.1, 0, 0, 0, 0, 0, 0)
 print("z-coeffs:", c_z1)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 # needs to counteract gravity in this case 
@@ -125,21 +110,20 @@ def z_t1(t):
     return c_z1[0] + c_z1[1] * t + c_z1[2] * t**2 + c_z1[3] * t**3 + c_z1[4] * t**4 + c_z1[5] * t**5 + c_z1[6] * t**6 + c_z1[7] * t**7
 def vz_t1(t):
     return c_z1[1] + 2 * c_z1[2] * t + 3 * c_z1[3] * t**2 + 4 * c_z1[4] * t**3 + 5 * c_z1[5] * t**4 + 6 * c_z1[6] * t**5 + 7 * c_z1[7] * t**6
-
 def az_t1(t):
     return 2 * c_z1[2] + 6 * c_z1[3] * t + 12 * c_z1[4] * t**2 + 20 * c_z1[ 5] * t**3 + 30 * c_z1[6] * t**4 + 42 * c_z1[7] * t**5 
-
 def jz_t1(t):
     return 6 * c_z1[3] + 24 * c_z1[4] * t + 60 * c_z1[5] * t**2 + 120 * c_z1[6] * t**3 + 210 * c_z1[7] * t**4
 
-
-
 # Separately plot polynomials (best to see distance it covers)
-'''
+
 # change as necessary
 plt.figure(figsize=(8, 6))
-plt.plot(time_departure, [x_t(t) for t in time_departure], label="Position")
-plt.plot(time_departure, [vx_t(t) for t in time_departure], label="Velocity")
+#plt.plot(time_approach, [x_t(t) for t in time_approach], label="Position")
+plt.plot(time_approach, [vx_t(t) for t in time_approach], label="xVelocity")
+plt.plot(time_approach, [vy_t(t) for t in time_approach], label="yVelocity")
+
+plt.plot(time_approach, [vz_t(t) for t in time_approach], label="zVelocity")
 #plt.plot(time_values, [ax_t(t) for t in time_departure], label="Acceleration")
 #plt.plot(time_values, [jx_t(t) for t in time_departure], label = "Jerk")
 plt.title("X-Direction Trajectory (departure segment)")
@@ -148,19 +132,7 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
-'''
 
-
-# this was only for position need to get array of all directional trajectories including pos, vel,acc, and jerk
-'''
-x_traj_approach = [x_t(t) for t in time_approach]
-y_traj_approach = [y_t(t) for t in time_approach]
-z_traj_approach = [z_t(t) for t in time_approach]
-
-x_traj_departure = [x_t1(t) for t in time_departure]
-y_traj_departure = [y_t1(t) for t in time_departure]
-z_traj_departure = [z_t1(t) for t in time_departure]
-'''
 # Generate trajectory data for both segments
 x_traj_approach = [x_t(t) for t in time_approach]
 y_traj_approach = [y_t(t) for t in time_approach]
@@ -200,14 +172,20 @@ traj = np.column_stack((time_full,
                         vx_traj, vy_traj, vz_traj,
                         ax_traj, ay_traj, az_traj))
 
-print(traj)
+# print(traj)
 v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
+# total thrust 
+m = 0.847 
+g = 9.81
+T_vector = np.vstack(m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2))
+T_mag = np.linalg.norm(T_vector, axis=0)
 
+print('Thrust Vector: ',T_vector)
+print('Thrust Mag: ', T_mag)
 
-'''
-# WIP to obtain the correct thrust orientation and aligned with gate, this is a wip
+# WIP to obtain the correct thrust orientation and aligned with gate
 def compute_orientation_quaternion(ax, ay, az):
-    thrust_vector = np.array([ax,ay,(az-9.81)])
+    thrust_vector = np.array([ax,ay,(az+9.81)])
     thrust_unit = thrust_vector / np.linalg.norm(thrust_vector)
 
     z_body = np.array([0,0,1])
@@ -222,6 +200,7 @@ def compute_orientation_quaternion(ax, ay, az):
             axis = cross_prod / np.linalg.norm(cross_prod)
             angle = np.arccos(np.clip(dot_prod, -1,1))
             return R.from_rotvec(angle*axis).as_quat()
+'''
 def get_thrust_vector_and_quaternion(t):
     """Return thrust vector and orientation quaternion at time t."""
     if t <= tf:
@@ -235,22 +214,22 @@ def get_thrust_vector_and_quaternion(t):
         az = az_t1(t1)
 
     q = compute_orientation_quaternion(ax, ay, az)
-    return np.array([ax, ay, (az - 9.81)]), q
+    return np.array([ax, ay, (az + 9.81)]), q
 thrust_vec, quat= get_thrust_vector_and_quaternion(tf)
 print('Thrust vector:', thrust_vec)
 print('Quaternion [x,y,z,w]', quat)
 '''
-
 # 3D Plot
 fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(x_traj, y_traj, z_traj, label='Drone Approach Trajectory')
+ax.plot(x_traj, y_traj, z_traj, color='blue',label='Drone Approach Trajectory')
 # wip magnitudes of acceleration
 skip =5
 ax.quiver(
     x_traj[::skip], y_traj[::skip], z_traj[::skip],
     ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
     length=0.2, normalize=True, color='r', label='acceleration vectors')
+# Gate
 ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 gate = np.array([
     [-0.5, 0, -0.25],
@@ -272,11 +251,17 @@ ty = np.array([
 gate_pts = gate @ ty.T + np.array([0, 0, 1])
 gate_normal = np.array([0, 0, 1]) @ ty.T
 gate_normal = gate_normal / np.linalg.norm(gate_normal)
-ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], 'g-', lw=2)
+ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
 ax.quiver(
     0, 0, 1,                    
     gate_normal[0], gate_normal[1], gate_normal[2],  # Components
     length=0.5, color='purple', linewidth=2, label='Gate Normal'
+)
+# thrust vector at gate
+ax.quiver(
+    0, 0, 1,  
+    T_vector[0], T_vector[1], T_vector[2],
+    length=0.1, color='orange', linewidth=2, label='Thrust at Gate'
 )
 
 ax.set_xlim([-2, 2])
