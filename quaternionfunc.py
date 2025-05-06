@@ -49,6 +49,13 @@ def unitQuat(q):
   
     return q / np.linalg.norm(q)
 
+def quat_to_rot(q):
+    w, i, j, k = q
+    R_x = [w*w + i*i - j*j - k*k, 2*(i*j + w*k),       2*(i*k - w*j)]
+    R_y = [2*(i*j - w*k),         w*w - i*i + j*j - k*k, 2*(j*k + w*i)]
+    R_z = [2*(i*k + w*j),         2*(j*k - w*i),         w*w - i*i - j*j + k*k]
+    return np.array([R_x, R_y, R_z])
+
 # https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
 def R_to_quat(R):
 

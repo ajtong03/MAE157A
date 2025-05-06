@@ -24,9 +24,9 @@ state = np.zeros(13)
 f = np.zeros(4)
 
 # x, y, z
-state[0] = x0
-state[1] = y0
-state[2] = z0
+state[0] = 0
+state[1] = 0
+state[2] = 0
 
 # vx, vy, vz
 state[3] = 0.
