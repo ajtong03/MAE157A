@@ -1,6 +1,12 @@
-import quaternionfunc
+# IGNORE CONTROLLER STUFF IN THIS FILE. IT IS INCORRECT
 import numpy as np
 import random
+from dynamics import dynamics   # import the class, not the module
+import quaternionfunc
+
+# make a local dynamics instance (match your main’s params & dt!)
+_dyn = dynamics(params=[9.81], dt=1.0/50.0)
+A_mat = np.array([[1,1,1,1], [0, _dyn.l,0,-_dyn.l], [-_dyn.l,0, _dyn.l,0], [_dyn.c,-_dyn.c, _dyn.c,-_dyn.c]])
 
 def quat_angle_err(q_act, q_d):
 # compute angle of error
@@ -31,29 +37,45 @@ def overshoot_settime(q_act, q_d, time = 10, thresh = 0.05):
     return overshoot, set_time
 
 # naive approach to computing gains  
-def naiveComputeGains(q_act, q_d):
-    Kp_range = (1, 20)  # roll, pitch, yaw
+def naiveComputeGains(q_act, q_d, state, w, w_d, T):
+    Kp_range = (1, 20)
     Kd_range = (1, 20)
 
-    q_e = quaternionfunc.error(q_act, q_d)
-    q_e_opt = q_e
+    # current best error (angle or norm—whatever you were using)
+    q_e_opt = quaternionfunc.error(q_act, q_d)
 
-    # if q_act and q_d are the same, there should be no gains applied
     Kp_opt = np.diag([0, 0, 0])
     Kd_opt = np.diag([0, 0, 0])
 
-    for i in range(1000):
-        Kp = np.diag([random.uniform(*Kp_range) for i in range(3)])
-        Kd = np.diag([random.uniform(*Kd_range) for i in range(3)]) 
+    q_cur = q_act
+    w_opt = w
+    state_test = state
+    #state_test[6:10] = q_act
 
-        #call function to get q_act
-        #q_new = _____
-        qe_new = quaternionfunc(q_new, q_d)
-        if(qe_new < q_e_opt):
+    for i in range(100):
+        Kp = np.diag([random.uniform(*Kp_range) for i in range(3)])
+        Kd = np.diag([random.uniform(*Kd_range) for i in range(3)])
+
+        # build a full‐size state vector, sticking q_act into the quaternion slot
+
+        # propagate that test state under your candidate thrusts `f`
+        #state_new = _dyn.propagate(state_test, f)
+        torque = computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d) 
+        f = np.linalg.solve(A_mat, np.hstack((T, torque)))
+
+        state_new = _dyn.propagate(state_test, f)
+        # pull out the new quaternion
+        q_new = state_new[6:10]
+        # measure the new error
+        qe_new = quaternionfunc.error(q_new, q_d)
+
+        # if it’s better, keep these gains
+        if np.linalg.norm(qe_new) < np.linalg.norm(q_e_opt):
             q_e_opt = qe_new
             Kp_opt = Kp
             Kd_opt = Kd
-    
+            #w_opt = w_new
+
     return Kp_opt, Kd_opt
 
 # the torque needs to be applied to the orientation and q_act needs to be refed into this   
@@ -65,9 +87,9 @@ def computeGains(q_act, q_d):
     lambda_range = (0, 1)
 
     # set these so that if q_act is already at q_d, stay in orientation
-    Kp_opt = np.diag([1, 1, 1])
-    Kd_opt = np.diag([1, 1, 1])
-    lambda_opt = np.diag([1, 1, 1])
+    Kp_opt = np.diag([0, 0, 0])
+    Kd_opt = np.diag([0, 0, 0])
+    lambda_opt = np.diag([0, 0, 0])
 
     #set variable to track optimal performance value
     #q_e = quaternionfunc.error(q_act, q_d)
@@ -95,8 +117,8 @@ def computeGains(q_act, q_d):
             set_opt = set_time
         
             # narrow the range if gains improve performance
-            Kp_range = (Kp_opt[0, 0] - 0.5, Kp_opt[0, 0] + 0.5)
-            Kd_range = (Kd_opt[0, 0] - 0.5, Kd_opt[0, 0] + 0.5)
+            # Kp_range = (Kp_opt[0, 0] - 0.5, Kp_opt[0, 0] + 0.5)
+            # Kd_range = (Kd_opt[0, 0] - 0.5, Kd_opt[0, 0] + 0.5)
         
         #Increase the range if no improvement
         # elif i % 100 == 0 and perf_opt == float('inf'):
@@ -112,9 +134,18 @@ def computeLambda(range, lambda_opt):
 
 
 def computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d):
-    q_e = quaternionfunc.error(q_act,q_d)
+    q_e = quaternionfunc.error(q_act, q_d)
     w_e = w - w_d
-    torque = -q_e(0) * Kp * q_e(1) - Kd * w_e
+
+    # real part
+    alpha = q_e[0]
+    # vector part
+    eps = q_e[1:]
+
+    # torque = – α·(Kp·eps)  –  (Kd·w_e)
+    Kp_mat = np.diag(Kp, Kp, Kp)
+    Kd_mat = np.diag(Kd, Kd, Kd)
+    torque = -alpha * (Kp_mat.dot(eps)) - (Kd_mat.dot(w_e))
     return torque
 
 def computeTorque(Kp, Kd, lambda_opt, q_act, q_d, w, w_d, Re):
@@ -130,4 +161,4 @@ def computeTorque(Kp, Kd, lambda_opt, q_act, q_d, w, w_d, Re):
 
     torque = -sgn * qe_mag * Kp * qe_vec - Kd * w_e - lambda_opt * sgn * qe_mag * q_deriv(1)
     return torque
-    
+

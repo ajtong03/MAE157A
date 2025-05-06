@@ -274,4 +274,3 @@ ax.set_title('3D Drone Trajectory through Gate')
 ax.legend()
 ax.grid(True)
 plt.show()
-
