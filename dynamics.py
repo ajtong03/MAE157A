@@ -1,4 +1,5 @@
 import numpy as np
+import quaternionfunc as qf
 class dynamics:
     def __init__(self, params, dt):
         # Simulation parameters
@@ -13,6 +14,14 @@ class dynamics:
         self.l = 0.07                 # Moment Arm (m)
         self.c = 0.0131               # Propeller Drag Coefficient (N·m/(N)^2)
         self.dt = dt                  # integration timestep (s)
+
+        self.minThrust = 0.05433327 * 9.81 #N
+        self.maxThrust = 0.392966325 * 9.81 #N
+
+        self.A = np.array([[self.l, self.l, -self.l, -self.l], 
+                            [-self.l, self.l, self.l, -self.l], 
+                            [self.c,-self.c, self.c,-self.c]]) 
+
 
     def print_specs(self):
         print("=== Drone Specifications ===")
@@ -34,35 +43,43 @@ class dynamics:
         acc = (R @ np.array([0, 0, T])) / self.m - np.array([0, 0, self.g])
 
         # Rotational dynamics
+        '''
         Mx = self.l * (f[1] - f[3])
         My = self.l * (f[2] - f[0])
         Mz = self.c * (f[0] - f[1] + f[2] - f[3])
-        M = np.array([Mx, My, Mz])
+        # M = A dot f
+        '''
+        M = self.A @ f
 
         omega = state[10:13]
-        domega = np.linalg.inv(self.J) @ (M - np.cross(omega, self.J @ omega))
+        domega = np.linalg.inv(self.J) @ (M + np.cross(-omega, self.J @ omega))
 
         # Quaternion kinematics
         qw, qx, qy, qz = q
+        '''
         Omega = np.array([
             [0,      -omega[0], -omega[1], -omega[2]],
             [omega[0],  0,       omega[2], -omega[1]],
             [omega[1], -omega[2], 0,        omega[0]],
             [omega[2],  omega[1], -omega[0], 0]
         ])
-        dq = 0.5 * Omega @ q
-
+        '''
+        omega_q = np.array([0, omega[0], omega[1], omega[2]])
+        dq = 0.5 * qf.product(q, omega_q)
         rates = np.zeros(13)
         rates[0:3]   = state[3:6]    # velocity
         rates[3:6]   = acc          # acceleration
         rates[6:10]  = dq           # quaternion rate
         rates[10:13] = domega       # angular acceleration
+        # print(rates)
         return rates
 
+    # RK4 propogate
     def propagate(self, state, f, dt=None):
         step = dt if dt is not None else self.dt
-        return state + step * self.rates(state, f)
-    
+        #breakpoint()
+        newState = state + step * self.rates(state, f)
+        return newState / np.linalg.norm(newState)
    
     @staticmethod
     def quat_to_rot(q):

@@ -67,8 +67,12 @@ class AttitudeController:
 
                 # Obtain motor forces so new state can be propogated
                 f = self.getForces(Kp, Kd, torque, thrust)
-                state_current = dyn.propagate(dyn, testState, f)
-                q_a = state_current[10:13] 
+                state_current = dyn.propagate(testState, f, self.dt)
+                print('state')
+                print(testState[6:10])
+                print('pause')
+                q_a = state_current[6:10] 
+                print(q_a)
 
                 temp = qf.error(q_a, q_d)
 
@@ -83,19 +87,21 @@ class AttitudeController:
 
         return Kp_opt, Kd_opt
     
-    def setAttController2(self, state, attitude, thrust):
+    def setAttController2(self, state, attitude):
+        dynam = dyn(np.array([9.81]), self.dt)
         # n is the number of gain combos to try
-        n = 100
+        n = 500
         max_errors =  np.zeros(n)
         gains = np.zeros((n, 2))
 
         Kp_range = (1, 10)
         Kd_range = (1, 10)
 
-        max_errors = np.array(n)
-
+        max_errors = np.zeros(n)
+        
+        t = 0
+        tf = 5
         for i in range(n):
-            state_current = state
             Kp = np.diag([np.random.uniform(*Kp_range) for i in range(3)])
             Kd = np.diag([np.random.uniform(*Kd_range) for i in range(3)])
             kpval = Kp[0][0]
@@ -103,40 +109,48 @@ class AttitudeController:
             gains[i] =[kpval, kdval]
 
             q_d = attitude
-                
-            testState = state_current
-            torque = self.computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
-            print(torque)
-            print(thrust)
-            # Obtain motor forces so new state can be propogated
-            f = self.getForces(Kp, Kd, torque, thrust)
-            state_current = dyn.propagate(testState, f)
-            q_a = state_current[10:13] 
-
-            err = qf.error(q_a, q_d)
-
-            # store the magnitude of the error
-            err = np.linalg.norm(err)
-            max_errors[i] = err
+            err_min = np.linalg.norm(qf.error(state[6:10], q_d))
+            testState = state
+            while t < tf:
+                torque = self.computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
+                # Obtain motor forces so new state can be propogated
+                f = self.getForces(torque)
+                # print('forces')
+                # print(f)
+                print('states')
+                print(testState[6:10])
+                newState = dynam.propagate(testState, f, self.dt)
+                q_a = newState[6:10] 
+                print(q_a)
+                err = qf.error(q_a, q_d)
+                print('error')
+                # store the magnitude of the error
+                err = np.linalg.norm(err)
+                print(err)
+                if err < err_min:
+                    err_min = err
+                t += self.dt
+                testState = newState
+            max_errors[i] = err_min
         
-        index_min = max_errors.index(min(max_errors))
+        index_min = np.argmin(max_errors)
         Kp_opt = gains[index_min][0]
         Kd_opt = gains[index_min][1]
 
+        #print(max_errors)
         return Kp_opt, Kd_opt
 
     #----------COMPUTE MOTOR FORCES GIVEN CONTROL GAINS AND RESULTANT TORQUES----------#
-    def getForces(self, kp, kd, torque, thrust):
-        self.alloc_matrix = self.setAllocMat(kd)
-        
+    def getForces(self, torque):
+        # self.alloc_matrix = self.setAllocMat(kd)
+        r = self.l
+        self.alloc_matrix = np.array([[r, r, -r, -r], 
+                                       [-r, r, r, -r], 
+                                       [self.c,-self.c, self.c,-self.c]]) 
+
         # inverse of allocation matrix
-        alloc_matrix_inv = np.linalg.inv(self.alloc_matrix)
-
-        forces = np.concatenate((thrust, torque))
-
-        # motor forces
-        f = np.matmul(alloc_matrix_inv, forces)
-
+        f = np.linalg.lstsq(self.alloc_matrix, torque)
+        f = f[0]
         # make sure motor forces are within the allowed thrusts
         f = np.clip(f, min=constants.min_thrust, max = constants.max_thrust)
         return f

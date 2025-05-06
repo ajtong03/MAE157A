@@ -66,7 +66,9 @@ data = np.append(t,state)
 data = np.append(data,f)
 
 
-# TEST ATTITUDE CONTROLLER
+#-----------------------------------------TEST ATTITUDE CONTROLLER-----------------------------------------#
+# Set target state q_d to be the unit quaternion. Run attitude controller to see how well error converges
+
 target_state = np.zeros(13)
 
 target_state[0] = 2
@@ -87,35 +89,39 @@ q_d = target_state[6:10]
 err = quaternionfunc.error(state[6:10], q_d)
 error_data = np.append(t, err)
 
-#Kp, Kd = AttitudeController.setAttController2(att, state, q_d, np.array([9.81*dyn.l]))
+#Kp, Kd = att.setAttController2(state, q_d)
 #print(Kd)
 #print(Kp)
-# Simulation loop
 
+# 5.218081614545586
+# 5.913484619280134
+# 6.091488660131964
+# 4.879255156420367
+# Simulation loop
 running = True
 while running:
 
     # Propagate dynamics with control inputs
-    Kp = np.diag([2.5, 2.5, 2.5])
-    Kd = np.diag([5, 5, 5])
-    #gains = np.array[Kp, Kd]
+    Kp = np.diag([20, 20, 20])
+    Kd = np.diag([2, 2.5, 2])
 
-    torque = AttitudeController.attController(att, state, target_state, Kp, Kd)
+    torque = att.attController(state, target_state, Kp, Kd)
     # set thrust so z component equals gravity
-    thrust = att.m * 9.81 / pitch
-    #print(thrust)
-    f = AttitudeController.getForces(att, Kp, Kd, torque, np.array([20]))
-    state = dyn.propagate(state, f, dt)
+    f = att.getForces(torque)
+    new_state = dyn.propagate(state, f, dt)
     q_e = quaternionfunc.error(state[6:10], q_d)
+
+    print('states')
+    print(state[6:10])
+    print(new_state[6:10])
+    print('error')
+    print(q_e)
     # If z too low then indicate crash and end simulation
     if state[2] < 0.1:
         print("CRASH!!!")
         break
-
-    # Update data array (this can probably be done in a much cleaner way...)
-    #tmp = np.append(tmp,f)
-    #tmp = np.append(t,state)
-    #data = np.vstack((data,tmp))
+    
+    state = new_state
 
     error = np.append(t, q_e)
     error_data = np.vstack((error_data,error))
