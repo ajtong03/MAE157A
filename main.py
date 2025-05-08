@@ -71,8 +71,7 @@ data = np.append(data,f)
 sim = Updater()
 states = []
 # Simulation loop
-running = True
-# i = 0
+
 for i in range(len(traj)):
     # Get new desired state from trajectory planner
     t, xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = traj[i]
@@ -85,6 +84,7 @@ for i in range(len(traj)):
     target_state = np.zeros(13)
     target_state[0:3] = np.array([xd, yd, zd])
     target_state[3:6] = np.array([vx_d, vy_d, vz_d])
+    print('target ', target_state[0:3])
 
     q_d, w_d, thrust = pos.posController(state_cur, target_state, a_d, j_d)
 
@@ -94,7 +94,7 @@ for i in range(len(traj)):
     torque = att.attController(state_cur, target_state)
     f = att.getForces(torque, thrust)
     state_cur = dyn.propagate(state_cur, f)
-
+    print('current ', state_cur[0:3])
     states.append(state_cur.copy())
     # If z to low then indicate crash and end simulation
     '''
@@ -113,11 +113,6 @@ for i in range(len(traj)):
     tmp = np.append(tmp,f)
     data = np.vstack((data,tmp))
 
-    # Update time
-    # t += dt 
-    #i +=1 
-    if t >= tf:
-        running = False
     sim.updatePlot(state_cur, dyn)
 
 # If save_data flag is true then save data
@@ -135,6 +130,6 @@ def animate(i):
     if i < len(states):
         return sim.updatePlot(states[i], dyn)
 #frames = int((trajectory.tf + trajectory.tf1)/dt) + 1
-ani = animation.FuncAnimation(plt.gcf(), animate, frames=len(states), interval=dt*1000, blit=False)
+ani = animation.FuncAnimation(plt.gcf(), animate, frames=len(states), interval=dt*1000, blit=False, repeat = False)
 plt.show()
 

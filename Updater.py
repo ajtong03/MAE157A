@@ -11,7 +11,7 @@ class Updater:
         self.axis_arrows = []
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
-        self.trail, = self.ax.plot([], [], [], 'b-', lw=2)
+        self.trail, = self.ax.plot([], [], [], 'm-', lw=2)
         self.arm1, = self.ax.plot([], [], [], 'k-', lw=2)
         self.arm2, = self.ax.plot([], [], [], 'k-', lw=2)
     
@@ -62,7 +62,6 @@ class Updater:
         world = []
         R = quat_to_rot(state[6:10])
         pos = state[0:3]
-        body_z_dir = R[:, 2]  # Third column of rotation matrix
         world = [R @ offset + pos for offset in offs]
         # world.append(world_frame)
         a,b,c,d = world

@@ -43,10 +43,10 @@ class PositionController:
 
         thrust = self.m * np.linalg.norm(a)
 
-        print('before flip thrust', thrust) 
+        #print('before flip thrust', thrust) 
         # make sure that thrust is within feasible range
         thrust = np.clip(thrust, self.minThrust, self.maxThrust)
-        print('after clip thrust', thrust)
+        #print('after clip thrust', thrust)
         
         # compute desired orientation
         # e represents the z-coordinate axis
