@@ -67,9 +67,9 @@ class dynamics:
         k3 = self.rates(state + 0.5 * step * k2, f)
         k4 = self.rates(state + step * k3, f)
 
-        newState = state + (step / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
-        newState[6:10] = newState[6:10] / np.linalg.norm(newState[6:10])
-        return newState
+        state += (step / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+        state[6:10] /= np.linalg.norm(state[6:10])
+        return state
    
     @staticmethod
     def quat_to_rot(q):

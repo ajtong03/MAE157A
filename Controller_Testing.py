@@ -105,12 +105,12 @@ error_data = np.append(t, err)
 #print(Kd)
 
 # Simulation loop
-runningA = False
+runningA = True
 testingA = runningA
 while runningA:
    # print(t)
     # Propagate dynamics with control inputs
-    Kp = np.diag([19, 18,20])
+    Kp = np.diag([19, 18, 20])
     Kd = np.diag([1.5, 1.5, 1.5])
     #Kp = np.diag([5, 5, 5])
     #Kd = np.diag([2.5, 2, 2.5])
@@ -186,7 +186,7 @@ error_a = np.empty((0, 2))
 ae_x = np.empty((0, 2))
 ae_y = np.empty((0, 2))
 ae_z = np.empty((0, 2))
-runningP = True
+runningP = False
 testingP = runningP
 
 while runningP:
