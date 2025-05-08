@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from dynamics import dynamics
 import quaternionfunc
 from AttitudeController import AttitudeController
+from PositionController import PositionController
 
 ##########################################
 ############ Drone Simulation ############
@@ -21,9 +22,9 @@ state = np.zeros(13)
 f = np.zeros(4)
 
 # x, y, z
-state[0] = 2
-state[1] = 2.3
-state[2] = 2
+state[0] = 0
+state[1] = 0
+state[2] = 0
 
 # vx, vy, vz
 state[3] = 0.
@@ -51,7 +52,7 @@ state[11] = 0.
 state[12] = 0.
 
 # Final time
-tf = 6.
+tf = 5.
 
 # Simulation rate
 rate = 500
@@ -66,14 +67,17 @@ g = 9.8
 # Initialize dynamics
 dyn = dynamics(np.array([g]), dt)
 att = AttitudeController(np.array([g]), dt)
+pos = PositionController(np.array([g]), dt)
 
 # Initialize data array that contains useful info (probably should add more)
 data = np.append(t,state)
 data = np.append(data,f)
 
 
+############################################################################################################
 #-----------------------------------------TEST ATTITUDE CONTROLLER-----------------------------------------#
 # Set target state q_d to be the unit quaternion. Run attitude controller to see how well error converges
+############################################################################################################
 
 target_state = np.zeros(13)
 
@@ -101,34 +105,22 @@ error_data = np.append(t, err)
 #print(Kd)
 
 # Simulation loop
-running = True
-while running:
-
+runningA = False
+testingA = runningA
+while runningA:
+   # print(t)
     # Propagate dynamics with control inputs
-    Kp = np.diag([15, 9, 10])
-    Kd = np.diag([40.5, 40, 40.5])
+    Kp = np.diag([19, 18,20])
+    Kd = np.diag([1.5, 1.5, 1.5])
     #Kp = np.diag([5, 5, 5])
     #Kd = np.diag([2.5, 2, 2.5])
 
-    torque = att.attController(state, target_state, Kp, Kd)
+    torque = att.attController_test(state, target_state, Kp, Kd)
     # set thrust so z component equals gravity
-    f = att.getForces(torque)
+    thrust = 9.81 * att.m * 1.5
+    f = att.getForces(torque, thrust)
     new_state = dyn.propagate(state, f, dt)
-    q_e = quaternionfunc.error(state[6:10], q_d)
-
-    '''
-    print('states')
-    print(state[6:10])
-    print(new_state[6:10])
-    print('error')
-    print(q_e)
-    '''
-    # If z too low then indicate crash and end simulation
-    '''
-    if state[2] < 0.1:
-        print("CRASH!!!")
-        break
-    '''
+    q_e = quaternionfunc.error(new_state[6:10], q_d)
     
     state = new_state
 
@@ -140,22 +132,23 @@ while running:
 
     # If time exceeds final time then stop simulator
     if t >= tf:
-        running = False
+        runningA = False
 
-# plot the error to see how well the gains converge
-time = error_data[:,0]
-q_w = error_data[:, 1]
-q_x = error_data[:, 2]
-q_y = error_data[:, 3]
-q_z = error_data[:, 4]
+if testingA == True:
+    # plot the error to see how well the gains converge
+    time = error_data[:,0]
+    q_w = error_data[:, 1]
+    q_x = error_data[:, 2]
+    q_y = error_data[:, 3]
+    q_z = error_data[:, 4]
 
-plt.plot(time, q_w, label = 'q_w')
-plt.plot(time, q_x, label = 'q_x')
-plt.plot(time, q_y, label = 'q_y')
-plt.plot(time, q_z, label = 'q_z')
-plt.legend()
-plt.grid(True)
-plt.show()
+    plt.plot(time, q_w, label = 'q_w')
+    plt.plot(time, q_x, label = 'q_x')
+    plt.plot(time, q_y, label = 'q_y')
+    plt.plot(time, q_z, label = 'q_z')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 
 # If save_data flag is true then save data
@@ -165,6 +158,71 @@ if save_data:
     file_name = f"data_{date_time_string}.csv"
     np.savetxt("../data/"+file_name, data, delimiter=",")
 
+############################################################################################################
+#-----------------------------------------TEST POSITION CONTROLLER-----------------------------------------#
+# Set target state xyz. Run position controller to see how well acceleration error converges
+############################################################################################################
+tp = 0.
+tfp = 7.
+dt = 1/500
 
+Kp = np.diag([22.5, 22, 18.5])
+Kd = np.diag([35.0, 35.0, 33.0])
 
+a_d = np.array([0., 0., 0.])
+
+statep = np.zeros(13)
+target_statep = np.zeros(13)
+
+statep[0] = 0.
+statep[1] = 0.
+statep[2] = 0.
+
+target_statep[0] = 1.0
+target_statep[1] = 1.0
+target_statep[2] = 1.0
+
+error_a = np.empty((0, 2))
+ae_x = np.empty((0, 2))
+ae_y = np.empty((0, 2))
+ae_z = np.empty((0, 2))
+runningP = True
+testingP = runningP
+
+while runningP:
+    a_e, a = pos.getAccelError(statep, target_statep, a_d, Kp, Kd)
+    print(a_e)
+    ae_x = np.vstack((ae_x, np.array([tp, a_e[0]])))
+    ae_y = np.vstack((ae_y, np.array([tp, a_e[1]])))
+    ae_z = np.vstack((ae_z, np.array([tp, a_e[2]])))
+    accel_error = np.array([tp, np.linalg.norm(a_e)])
+    error_a = np.vstack((error_a, accel_error))
+    statep[0:3] = statep[0:3] + statep[3:6] * dt
+    statep[3:6] = statep[3:6] + a * dt
+
+    # Update time
+    tp += dt 
+
+    # If time exceeds final time then stop simulator
+    if tp >= tfp:
+        runningP = False
+
+if testingP == True:
+    # plot the error to see how well the gains converge
+    time = error_a[:,0]
+    a_e = error_a[:, 1]
+    a_x = ae_x[:, 1]
+    a_y = ae_y[:, 1]
+    a_z = ae_z[:, 1]
+    
+
+    plt.plot(time, a_e, label = 'a_e magnitude')
+    plt.plot(time, a_x, label = 'a_x')
+    plt.plot(time, a_y, label = 'a_y')
+    plt.plot(time, a_z, label = 'a_z')
+    plt.axis([0, tfp, -2, 2])
+
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 

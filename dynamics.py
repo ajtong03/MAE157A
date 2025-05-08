@@ -43,27 +43,11 @@ class dynamics:
         acc = (R @ np.array([0, 0, T])) / self.m - np.array([0, 0, self.g])
 
         # Rotational dynamics
-        '''
-        Mx = self.l * (f[1] - f[3])
-        My = self.l * (f[2] - f[0])
-        Mz = self.c * (f[0] - f[1] + f[2] - f[3])
-        # M = A dot f
-        '''
         M = self.A @ f
 
         omega = state[10:13]
         domega = np.linalg.inv(self.J) @ (M + np.cross(-omega, self.J @ omega))
 
-        # Quaternion kinematics
-        # qw, qx, qy, qz = q
-        '''
-        Omega = np.array([
-            [0,      -omega[0], -omega[1], -omega[2]],
-            [omega[0],  0,       omega[2], -omega[1]],
-            [omega[1], -omega[2], 0,        omega[0]],
-            [omega[2],  omega[1], -omega[0], 0]
-        ])
-        '''
         omega_q = np.array([0, *omega])
         dq = 0.5 * qf.product(q, omega_q)
         rates = np.zeros(13)
@@ -74,11 +58,16 @@ class dynamics:
         # print(rates)
         return rates
 
-    # RK4 propogate
+    # Using RK4 formula to propagate
     def propagate(self, state, f, dt=None):
         step = dt if dt is not None else self.dt
-        #breakpoint()
-        newState = state + step * self.rates(state, f)
+
+        k1 = self.rates(state, f)
+        k2 = self.rates(state + 0.5 * step * k1, f)
+        k3 = self.rates(state + 0.5 * step * k2, f)
+        k4 = self.rates(state + step * k3, f)
+
+        newState = state + (step / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
         newState[6:10] = newState[6:10] / np.linalg.norm(newState[6:10])
         return newState
    

@@ -16,11 +16,8 @@ def product(q1, q2):
     
 # function to compute the inverse of a quaternion
 def inverse(q):
-    mag = q[0]
-    i = -q[1]
-    j = -q[2]
-    k = -q[3]
-    q_inv = np.array([mag, i, j, k])
+    w, x, y, z = q
+    q_inv = np.array([w, -x, -y, -z])
 
     return q_inv
     
@@ -28,7 +25,11 @@ def inverse(q):
 def error(qa, qd):
     qd_inv = inverse(qd)
     qe = product(qd_inv, qa)
- 
+    # if the magnitude of qe is 0, the result should be the identity quaternion
+    if np.linalg.norm(qe) == 0:
+        return np.array([1, 0, 0, 0])
+    qe = qe / np.linalg.norm(qe)
+
     return qe
 
 def deriv(q1, w):
@@ -42,6 +43,13 @@ def euler_to_quat(phi, theta, psi):
     y = np.cos(phi/2)*np.sin(theta/2)*np.cos(psi/2) + np.sin(phi/2)*np.cos(theta/2)*np.sin(psi/2)
     z = np.cos(phi/2)*np.cos(theta/2)*np.sin(psi/2) - np.sin(phi/2)*np.sin(theta/2)*np.cos(psi/2)
     return np.array([w, x, y, z])
+
+def quat_to_euler(q):
+    w, x, y, z = q
+    phi = np.arctan2(2*(w*x + y*z), 1 - 2*(x*x + y*y))
+    theta = np.arcsin(np.clip(2*(w*y - z*x), -1.0, 1.0))
+    psi = np.arctan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
+    return phi, theta, psi
 
 def unitQuat(q):
     if abs(np.linalg.norm(q)) == 0:
@@ -85,6 +93,6 @@ def R_to_quat(R):
             q = np.array([m12 - m21, m20 - m02, m01 - m10, t])
 
     q *= 1 / 2 / np.sqrt(t)
-
-    return np.array([q[3], q[0], q[1], q[2]])
+    quat = np.array([q[3], q[0], q[1], q[2]])
+    return quat / np.linalg.norm(quat)
 

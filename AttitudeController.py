@@ -20,17 +20,70 @@ class AttitudeController:
 
         self.minThrust = 0.05433327 * 9.81 #N
         self.maxThrust = 0.392966325 * 9.81 #N
+        self.A = np.array([[1, 1, 1, 1],
+                            [self.l, self.l, -self.l, -self.l], 
+                            [-self.l, self.l, self.l, -self.l], 
+                            [self.c,-self.c, self.c,-self.c]])
 
-
-
-    #-------------------------ATTITUDE CONTROLLER----------------------------------#
-    def attController(self, state, target_state, Kp, Kd):
+        # these gains are set after testing different gain values to see which converge the best 
+        self.Kp = np.diag([19, 18,20])
+        self.Kd = np.diag([1.5, 1.5, 1.5])
+    
+    
+    #---------- ATTITUDE CONTROLLER GIVEN CURRENT AND TARGET STATES ----------#
+    def attController(self, state, target_state):
         #Kp = constants.Kp_a
         #Kd = constants.Kd_a
 
         q = state[6:10]
         w = state[10:13]
         q_d = target_state[6:10]
+        q_d = q_d / np.linalg.norm(q_d)
+        w_d = target_state[10:13]
+        torque = self.computeTorqueNaive(self.Kp, self.Kd, q, q_d, w, w_d)
+
+        return torque
+
+    #----------COMPUTE MOTOR FORCES GIVEN CONTROL GAINS AND RESULTANT TORQUES----------#
+    def getForces(self, torque, thrust):
+        # inverse of allocation matrix
+        # A_inv = np.linalg.inv(self.A)
+        f = np.linalg.solve(self.A, [thrust, *torque])
+        #f = np.linalg.lstsq(self.alloc_matrix, torque)
+        #f = f[0]
+        # make sure motor forces are within the allowed thrusts
+        f = np.clip(f, min=constants.min_thrust, max = constants.max_thrust)
+        return f
+
+
+    #------------------------COMPUTE TORQUES--------------------------#
+    @staticmethod
+    def computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d):
+        q_e = qf.error(q_act, q_d)
+        w_e = w - w_d
+
+        # real part
+        alpha = q_e[0]
+        # vector part
+        vec = q_e[1:]
+
+        torque = -alpha * np.matmul(Kp, vec) - np.matmul(Kd, w_e)
+        return np.array(torque)
+    
+
+
+    #############################################################################################################################
+    ##################################### FUNCTIONS FOR TESTING AND DETERMINING GAIN VALUES #####################################
+    #############################################################################################################################
+    #-------------------------ATTITUDE CONTROLLER TESTER FOR DIFFERENT GAIN VALUES----------------------------------#
+    def attController_test(self, state, target_state, Kp, Kd):
+        #Kp = constants.Kp_a
+        #Kd = constants.Kd_a
+
+        q = state[6:10]
+        w = state[10:13]
+        q_d = target_state[6:10]
+        q_d = q_d / np.linalg.norm(q_d)
         w_d = target_state[10:13]
         #torque = self.computeTorqueNaive(Kp, Kd, q, q_d, w, w_d)
         torque = self.computeTorqueNaive(Kp, Kd, q, q_d, w, w_d)
@@ -94,7 +147,8 @@ class AttitudeController:
         # n is the number of gain combos to try
         n = 500
         max_errors =  np.zeros(n)
-        gains = np.zeros((n, 2))
+        kp_gains = np.zeros((n, 3))
+        kd_gains = np.zeros((n, 3))
 
         Kp_range = (1, 50)
         Kd_range = (1, 50)
@@ -104,11 +158,26 @@ class AttitudeController:
         t = 0
         tf = 5
         for i in range(n):
+            '''
             Kp = np.diag([np.random.uniform(*Kp_range) for i in range(3)])
             Kd = np.diag([np.random.uniform(*Kd_range) for i in range(3)])
             kpval = Kp[0][0]
             kdval = Kd[0][0]
             gains[i] =[kpval, kdval]
+            '''
+            kp1 = np.random.uniform(*Kp_range)
+            kp2 = np.random.uniform(*Kp_range) 
+            kp3 = np.random.uniform(*Kp_range)
+
+            kd1 = np.random.uniform(*Kd_range)
+            kd2 = np.random.uniform(*Kd_range) 
+            kd3 = np.random.uniform(*Kd_range)
+
+            Kp = np.diag([kp1, kp2, kp3])
+            Kd = np.diag([kd1, kd2, kd3])
+            
+            kp_gains[i] = [kp1, kp2, kp3]
+            kd_gains[i] = [kd1, kd2, kd3]
 
             q_d = attitude
             err_min = np.linalg.norm(qf.error(state[6:10], q_d))
@@ -116,7 +185,9 @@ class AttitudeController:
             while t < tf:
                 torque = self.computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
                 # Obtain motor forces so new state can be propogated
-                f = self.getForces(torque)
+                # arbitrary thrust that keeps it from just crashing
+                thrust = 9.81 * self.m * 1.5
+                f = self.getForces(torque, thrust)
                 # print('forces')
                 # print(f)
                 print('states')
@@ -136,41 +207,13 @@ class AttitudeController:
             max_errors[i] = err_min
         
         index_min = np.argmin(max_errors)
-        Kp_opt = gains[index_min][0]
-        Kd_opt = gains[index_min][1]
+        Kp_opt = kp_gains[index_min]
+        Kd_opt = kd_gains[index_min]
 
         #print(max_errors)
         return Kp_opt, Kd_opt
 
-    #----------COMPUTE MOTOR FORCES GIVEN CONTROL GAINS AND RESULTANT TORQUES----------#
-    def getForces(self, torque):
-        # self.alloc_matrix = self.setAllocMat(kd)
-        r = self.l
-        self.alloc_matrix = np.array([[r, r, -r, -r], 
-                                       [-r, r, r, -r], 
-                                       [self.c,-self.c, self.c,-self.c]]) 
-
-        # inverse of allocation matrix
-        f = np.linalg.lstsq(self.alloc_matrix, torque)
-        f = f[0]
-        # make sure motor forces are within the allowed thrusts
-        f = np.clip(f, min=constants.min_thrust, max = constants.max_thrust)
-        return f
-
-
-    #------------------------COMPUTE TORQUES--------------------------#
-    @staticmethod
-    def computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d):
-        q_e = qf.error(q_act, q_d)
-        w_e = w - w_d
-
-        # real part
-        alpha = q_e[0]
-        # vector part
-        vec = q_e[1:]
-
-        torque = -alpha * np.matmul(Kp, vec) - np.matmul(Kd, w_e)
-        return np.array(torque)
+   
 
     #--------COMPUTE EULER ANGLES FROM POS, VEL, ACCEL-----------
     # given position, velocity, and acceleration, find the corresponding roll, pitch, yaw

@@ -143,6 +143,9 @@ vz_traj_approach = [vz_t(t) for t in time_approach]
 ax_traj_approach = [ax_t(t) for t in time_approach]
 ay_traj_approach = [ay_t(t) for t in time_approach]
 az_traj_approach = [az_t(t) for t in time_approach]
+jx_traj_approach = [jx_t(t) for t in time_approach]
+jy_traj_approach = [jy_t(t) for t in time_approach]
+jz_traj_approach = [jz_t(t) for t in time_approach]
 
 x_traj_departure = [x_t1(t) for t in time_departure]
 y_traj_departure = [y_t1(t) for t in time_departure]
@@ -153,6 +156,9 @@ vz_traj_departure = [vz_t1(t) for t in time_departure]
 ax_traj_departure = [ax_t1(t) for t in time_departure]
 ay_traj_departure = [ay_t1(t) for t in time_departure]
 az_traj_departure = [az_t1(t) for t in time_departure]
+jx_traj_departure = [jx_t1(t) for t in time_departure]
+jy_traj_departure = [jy_t1(t) for t in time_departure]
+jz_traj_departure = [jz_t1(t) for t in time_departure]
 
 x_traj = np.concatenate((x_traj_approach, x_traj_departure))
 y_traj = np.concatenate((y_traj_approach, y_traj_departure))
@@ -163,6 +169,9 @@ vz_traj = np.concatenate((vz_traj_approach, vz_traj_departure))
 ax_traj = np.concatenate((ax_traj_approach, ax_traj_departure))
 ay_traj = np.concatenate((ay_traj_approach, ay_traj_departure))
 az_traj = np.concatenate((az_traj_approach, az_traj_departure))
+jx_traj = np.concatenate((jx_traj_approach, jx_traj_departure))
+jy_traj = np.concatenate((jy_traj_approach, jy_traj_departure))
+jz_traj = np.concatenate((jz_traj_approach, jz_traj_departure))
 
 time_full = np.concatenate((time_approach, time_departure + tf))
 
@@ -170,7 +179,8 @@ time_full = np.concatenate((time_approach, time_departure + tf))
 traj = np.column_stack((time_full,
                         x_traj, y_traj, z_traj,
                         vx_traj, vy_traj, vz_traj,
-                        ax_traj, ay_traj, az_traj))
+                        ax_traj, ay_traj, az_traj,
+                        jx_traj, jy_traj, jz_traj))
 
 # print(traj)
 v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
