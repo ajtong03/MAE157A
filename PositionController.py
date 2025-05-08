@@ -20,8 +20,8 @@ class PositionController:
         self.maxThrust = 0.392966325 * 9.81 #N
 
     def posController(self, state, target_state, a_d: np.ndarray, j_d: np.ndarray):
-        Kp = np.diag([2, 2, 2])
-        Kd = np.diag([3, 3, 3])
+        Kp = np.diag([22.5, 22, 18.5])
+        Kd = np.diag([35.0, 35.0, 33.0])
 
         p = state[0:3]
         v = state[3:6]
