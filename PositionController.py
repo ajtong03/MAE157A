@@ -1,6 +1,6 @@
 import constants
 import numpy as np
-import quaternionfunc as qf
+from quaternionfunc import *
 class PositionController:
     def __init__(self, params, dt):
         # Simulation parameters
@@ -19,34 +19,60 @@ class PositionController:
         self.minThrust = 0.05433327 * 9.81 #N
         self.maxThrust = 0.392966325 * 9.81 #N
 
-    def posController2(self, state, target_state, a_d):
+    def posController(self, state, target_state, a_d: np.ndarray, j_d: np.ndarray):
         Kp = np.diag([2, 2, 2])
         Kd = np.diag([3, 3, 3])
 
         p = state[0:3]
         v = state[3:6]
 
-        p_e = target_state[0:3] - p
-        v_e = target_state[3:6] - v
+        p_e = p - target_state[0:3]
+        v_e = v - target_state[3:6]
 
         # compute acceleration and desired thrust
-        a = a_d - np.matmul(Kp, p_e) - np.matmul(Kd, v_e) + np.arr([0, 0, self.g])
-        thrust = self.m * a
+        a = a_d - Kp @ p_e - Kd @ v_e + np.array([0, 0, self.g])
+        # a_hat is the acceleration unit vector
+        a_hat = a / np.linalg.norm(a)
 
-        # check that this doesn't exceed max thrust
-        if np.linalg.norm(thrust) > constants.max_thrust:
-            thrust = thrust * abs(constants.max_thrust /thrust)
+        thrust = self.m * np.linalg.norm(a)
+
+        
+        thrust = np.clip(thrust, self.minThrust, self.maxThrust)
+        
         
         # compute desired orientation
-        # a_hat is the acceleration unit vector
         # e represents the z-coordinate axis
         # e_T is the transpose of e
-        a_hat = a / np.linalg.norm(a)
         e = np.array([0, 0, 1])
-        e_T = e.reshape(-1, 1)
-        w_d = np.arr([target_state[11], -target_state[10], 0])
-        w_d = w_d.reshape(-1, 1)
+        w_d = np.array([target_state[11], -target_state[10], 0])
+        w_d = w_d.T
 
-        q_d = (1 / np.sqrt(2 * (1 + e_T @ a_hat))) * (np.array(1 + e_T @ a_hat, np.cross(e, a_hat)) @ w_d)
+        multiplier = 1 / np.sqrt(2 * (1 + np.dot(e.T, a_hat)))
+        qw =  1 + np.dot(e.T, a_hat)
+        vec = np.cross(e, a_hat)
+        q_d = multiplier * np.array([qw, vec[0], vec[1], vec[2]])
 
-        return q_d, thrust
+        R_d = quat_to_rot(q_d)
+        print(R_d.T)
+        ahat_dot = 1 / np.linalg.norm(a) * (j_d - np.dot(a_hat, j_d) * a_hat)
+        w = R_d.T @ ahat_dot
+        w_d = np.zeros(3)
+        w_d[0] = -w[1]
+        w_d[1] = w[0]
+        w_d[2] = 0
+        return q_d, w_d, thrust
+    
+    def getAccelError(self, state, target_state, a_d:np.ndarray, Kp, Kd):
+
+        p = state[0:3]
+        v = state[3:6]
+
+        p_e = p - target_state[0:3]
+        v_e = v - target_state[3:6] 
+
+        # compute acceleration and desired thrust
+        a = a_d - Kp @ p_e - Kd @ v_e + np.array([0, 0, self.g])
+
+        a_e = a - a_d
+        
+        return a_e, a 

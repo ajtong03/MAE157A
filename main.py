@@ -60,41 +60,30 @@ data = np.append(data,f)
 
 # initialise trajectory
 traj = trajectory.traj
-# time_steps =traj[:, 0]
+
 # Simulation loop
 running = True
 i = 0
-while running:
+while i in range(len(traj)):
     # Get new desired state from trajectory planner
     t, xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = traj[i]
 
     a_d = np.array([ax_d, ay_d, az_d])
     j_d = np.array([jx_d, jy_d, jz_d])
+
     target_state = np.zeros(13)
     target_state[0:3] = np.array([xd, yd, zd])
     target_state[3:6] = np.array([vx_d, vy_d, vz_d])
-    # target_state[10:13] = np.array([])
-    # how to know the desired angular accelerations?
+
     q_d, w_d, thrust = pos.posController(state, target_state, a_d, j_d)
-    print('thrust')
-    print(thrust)
+
     target_state[6:10] = q_d
     target_state[10:13] = w_d
 
     torque = att.attController(state, target_state)
-    print('torque')
-    print(torque)
     f = att.getForces(torque, thrust)
     state_cur = dyn.propagate(state, f)
 
-    # Run outer-loop controller to get thrust and references for inner loop 
-    # T, ... 
-
-    # Run inner-loop controller to get motor forces 
-    # f = ... 
-
-    # Propagate dynamics with control inputs
-    # state = dyn.propagate(state, f, dt)
  
     # If z to low then indicate crash and end simulation
     if state[2] < 0.1:
