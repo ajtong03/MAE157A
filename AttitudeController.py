@@ -20,8 +20,11 @@ class AttitudeController:
 
         # add 10% margin for min and max thrusts
 
-        self.minThrust = 0.05433327 * 9.81  * 1.1 #N
-        self.maxThrust = 0.392966325 * 9.81 * 0.9#N
+        self.minForce = 0.05433327 * 9.81  * 1.1 #N
+        self.maxForce = 0.392966325 * 9.81 * 0.9#N
+
+        self.minThrust = 4 * self.minForce
+        self.maxThrust = 4 * self.maxForce
         self.A = np.array([[1, 1, 1, 1],
                             [self.l, self.l, -self.l, -self.l], 
                             [-self.l, self.l, self.l, -self.l], 
@@ -52,10 +55,10 @@ class AttitudeController:
         # A_inv = np.linalg.inv(self.A)
         f = np.linalg.solve(self.A, [thrust, *torque])
         #f = np.linalg.lstsq(self.alloc_matrix, torque)
-        #f = f[0]
-        # make sure motor forces are within the allowed thrusts
+        #f = f[0]    
         #print('before clip', f)
-        f = np.clip(f, min=constants.min_thrust, max = constants.max_thrust)
+        # make sure motor forces are within the allowed thrusts
+        f = np.clip(f, min=self.minForce, max = self.maxForce)
         #print('after clip', f)
         return f
 

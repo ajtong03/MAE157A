@@ -17,14 +17,18 @@ class PositionController:
         self.dt = dt                  # integration timestep (s)
 
         # apply 10% margin
-        self.minThrust = 0.05433327 * 9.81 * 1.1 #N
-        self.maxThrust = 0.392966325 * 9.81 * 0.9 #N
+        # multiply by 4 because there are 4 motors
+        self.minThrust = 4 * 0.05433327 * 9.81 * 1.1 #N
+        self.maxThrust = 4* 0.392966325 * 9.81 * 0.9 #N
 
     def posController(self, state, target_state, a_d: np.ndarray, j_d: np.ndarray):
         # Kp = np.diag([22.5, 22, 18.5])
         # Kd = np.diag([35.0, 35.0, 33.0])
-        Kp = np.diag([1.59, 1.57, 3.07])
-        Kd = np.diag([1.05, 1.0,  1.73])
+        #Kp = np.diag([1.59, 1.57, 3.07])
+        #Kd = np.diag([1.05, 1.0,  1.73])
+        Kp = np.diag([7.9, 7.7, 10.77])
+        Kd = np.diag([5.5, 5,  10.53])
+        
 
         p = state[0:3]
         v = state[3:6]
@@ -40,6 +44,7 @@ class PositionController:
         thrust = self.m * np.linalg.norm(a)
 
         print('before flip thrust', thrust) 
+        # make sure that thrust is within feasible range
         thrust = np.clip(thrust, self.minThrust, self.maxThrust)
         print('after clip thrust', thrust)
         
