@@ -85,10 +85,10 @@ target_state[0] = 2
 target_state[1] = 2
 target_state[2] = 2
 
-target_state[6] = 3
-target_state[7] = 3
-target_state[8] = 4
-target_state[9] = 5
+target_state[6] = 2
+target_state[7] = 1
+target_state[8] = 1
+target_state[9] = 1
 
 #Kp = np.diag([3, 3, 3])
 #Kd = np.diag([2, 2, 2])
@@ -110,8 +110,8 @@ testingA = runningA
 while runningA:
    # print(t)
     # Propagate dynamics with control inputs
-    Kp = np.diag([19, 18, 20])
-    Kd = np.diag([1.5, 1.5, 1.5])
+    Kp = np.diag([4.1, 4.0, 4.5])
+    Kd = np.diag([.28, .25, .52])
     #Kp = np.diag([5, 5, 5])
     #Kd = np.diag([2.5, 2, 2.5])
 
@@ -142,13 +142,14 @@ if testingA == True:
     q_y = error_data[:, 3]
     q_z = error_data[:, 4]
 
+    plt.figure(1)
     plt.plot(time, q_w, label = 'q_w')
     plt.plot(time, q_x, label = 'q_x')
     plt.plot(time, q_y, label = 'q_y')
     plt.plot(time, q_z, label = 'q_z')
     plt.legend()
     plt.grid(True)
-    plt.show()
+    # plt.show()
 
 
 # If save_data flag is true then save data
@@ -163,11 +164,11 @@ if save_data:
 # Set target state xyz. Run position controller to see how well acceleration error converges
 ############################################################################################################
 tp = 0.
-tfp = 7.
+tfp = 4.
 dt = 1/500
 
-Kp = np.diag([22.5, 22, 18.5])
-Kd = np.diag([35.0, 35.0, 33.0])
+Kp = np.diag([15.9, 15.7, 30.77])
+Kd = np.diag([10.5, 10,  17.53])
 
 a_d = np.array([0., 0., 0.])
 
@@ -178,20 +179,20 @@ statep[0] = 0.
 statep[1] = 0.
 statep[2] = 0.
 
-target_statep[0] = 1.0
-target_statep[1] = 1.0
-target_statep[2] = 1.0
+target_statep[0] = 0.1
+target_statep[1] = 0.1
+target_statep[2] = 0.1
 
 error_a = np.empty((0, 2))
 ae_x = np.empty((0, 2))
 ae_y = np.empty((0, 2))
 ae_z = np.empty((0, 2))
-runningP = False
+runningP = True
 testingP = runningP
 
 while runningP:
     a_e, a = pos.getAccelError(statep, target_statep, a_d, Kp, Kd)
-    print(a_e)
+    # print(a_e)
     ae_x = np.vstack((ae_x, np.array([tp, a_e[0]])))
     ae_y = np.vstack((ae_y, np.array([tp, a_e[1]])))
     ae_z = np.vstack((ae_z, np.array([tp, a_e[2]])))
@@ -215,7 +216,7 @@ if testingP == True:
     a_y = ae_y[:, 1]
     a_z = ae_z[:, 1]
     
-
+    plt.figure(2)
     plt.plot(time, a_e, label = 'a_e magnitude')
     plt.plot(time, a_x, label = 'a_x')
     plt.plot(time, a_y, label = 'a_y')

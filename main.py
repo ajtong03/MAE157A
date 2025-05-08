@@ -25,17 +25,10 @@ t = 0.
 
 # initialise starting position, velocity, quaternion, angular velocity
 # these values are dependent on trajectory
-p_start = [0., 0., 0.]
-v_start = [0.0, 0.0, 0.0]
-q_start = [1.0, 0., 0., 0.]
-w_start = [0., 0., 0.] # in radians
-
-# initialise starting state
-state_cur = np.array(p_start + v_start + q_start + w_start)
-f = np.zeros(4)
 
 # Final time from trajectory
-tf = trajectory.tf #10.
+tf = trajectory.total_time #10.
+# print(tf)
 
 # Simulation rate
 rate = 500
@@ -52,23 +45,41 @@ att = AttitudeController(params, dt)
 
 # Initialize data array that contains useful info (probably should add more)
 # CONFIGURE THIS
-data = np.append(t,state_cur)
-data = np.append(data,f)
+
 
 # initialise trajectory
 traj = trajectory.traj
+# print(traj, 'end')
+p_start = traj[0][1:4]
+#print('start', p_start)
+v_start = traj[0][4:7]
+q_start = [1.0, 0., 0., 0.]
+w_start = [0., 0., 0.] # in radians
+
+# initialise starting state
+f = np.zeros(4)
+state_cur = np.array(list(p_start) + list(v_start) + q_start + w_start)
+
+# Initialize data array that contains useful info (probably should add more)
+# CONFIGURE THIS
+data = np.append(t,state_cur)
+data = np.append(data,f)
+
+
 
 # initilize 3D plot
 sim = Updater()
 states = []
 # Simulation loop
 running = True
-i = 0
-for _ in range(len(traj)):
+# i = 0
+for i in range(len(traj)):
     # Get new desired state from trajectory planner
     t, xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = traj[i]
-
+    # print('vel: ', vx_d, ' ', vy_d, ' ', vz_d)
     a_d = np.array([ax_d, ay_d, az_d])
+    # p_d = np.array([xd, yd, zd])
+    # print(p_d)
     j_d = np.array([jx_d, jy_d, jz_d])
 
     target_state = np.zeros(13)
@@ -90,11 +101,12 @@ for _ in range(len(traj)):
     if state_cur[2] < 0.1:
         print("CRASH!!!")
         break
-    elif t == tf:
+    '''
+    if t == tf:
         # break if the end of the trajectory has been reached
         print('End of trajectory reached')
         break
-    '''
+    
 
     # Update data array (this can probably be done in a much cleaner way...)
     tmp = np.append(t,state_cur)
@@ -102,9 +114,8 @@ for _ in range(len(traj)):
     data = np.vstack((data,tmp))
 
     # Update time
-    t += dt 
-
-    # If time exceeds final time then stop simulator
+    # t += dt 
+    #i +=1 
     if t >= tf:
         running = False
     sim.updatePlot(state_cur, dyn)

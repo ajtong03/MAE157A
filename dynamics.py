@@ -1,5 +1,5 @@
 import numpy as np
-import quaternionfunc as qf
+from quaternionfunc import *
 class dynamics:
     def __init__(self, params, dt):
         # Simulation parameters
@@ -12,7 +12,7 @@ class dynamics:
             [-1.07e-7, -2.01e-7,  4.55e-3]
         ])
         self.l = 0.07                 # Moment Arm (m)
-        self.c = 0.0131               # Propeller Drag Coefficient (N·m/(N)^2)
+        self.c = 0.2               # Propeller Drag Coefficient (N·m/(N)^2)
         self.dt = dt                  # integration timestep (s)
 
         self.minThrust = 0.05433327 * 9.81 #N
@@ -36,7 +36,7 @@ class dynamics:
     def rates(self, state, f):
         # State: [x,y,z, vx,vy,vz, qw,qx,qy,qz, wx,wy,wz]
         q = state[6:10]
-        R = self.quat_to_rot(q)
+        R = quat_to_rot(q)
 
         # Translational dynamics
         T = np.sum(f)
@@ -49,7 +49,7 @@ class dynamics:
         domega = np.linalg.inv(self.J) @ (M + np.cross(-omega, self.J @ omega))
 
         omega_q = np.array([0, *omega])
-        dq = 0.5 * qf.product(q, omega_q)
+        dq = 0.5 * product(q, omega_q)
         rates = np.zeros(13)
         rates[0:3]   = state[3:6]    # velocity
         rates[3:6]   = acc          # acceleration
@@ -71,11 +71,3 @@ class dynamics:
         state[6:10] /= np.linalg.norm(state[6:10])
         return state
    
-    @staticmethod
-    def quat_to_rot(q):
-        w, i, j, k = q
-        R_x = [w*w + i*i - j*j - k*k, 2*(i*j + w*k),       2*(i*k - w*j)]
-        R_y = [2*(i*j - w*k),         w*w - i*i + j*j - k*k, 2*(j*k + w*i)]
-        R_z = [2*(i*k + w*j),         2*(j*k - w*i),         w*w - i*i - j*j + k*k]
-        return np.array([R_x, R_y, R_z])
-        

@@ -27,7 +27,7 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # Approach Segment 
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
 # x - axis
-tf = 6 # seconds
+tf = 3 # seconds
 time_approach = np.linspace(0, tf, 200)
 
 c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 1.5, 0.5, 0)
@@ -174,7 +174,7 @@ jy_traj = np.concatenate((jy_traj_approach, jy_traj_departure))
 jz_traj = np.concatenate((jz_traj_approach, jz_traj_departure))
 
 time_full = np.concatenate((time_approach, time_departure + tf))
-
+total_time = tf + tf1
 # Columns: time, x, y, z, vx, vy, vz, ax, ay, az
 traj = np.column_stack((time_full,
                         x_traj, y_traj, z_traj,

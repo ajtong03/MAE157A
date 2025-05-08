@@ -15,11 +15,13 @@ class AttitudeController:
             [-1.07e-7, -2.01e-7,  4.55e-3]
         ])
         self.l = 0.07                 # Moment Arm (m)
-        self.c = 0.0131               # Propeller Drag Coefficient (N·m/(N)^2)
+        self.c = 0.2# 0131               # Propeller Drag Coefficient (N·m/(N)^2)
         self.dt = dt                  # integration timestep (s)
 
-        self.minThrust = 0.05433327 * 9.81 #N
-        self.maxThrust = 0.392966325 * 9.81 #N
+        # add 10% margin for min and max thrusts
+
+        self.minThrust = 0.05433327 * 9.81  * 1.1 #N
+        self.maxThrust = 0.392966325 * 9.81 * 0.9#N
         self.A = np.array([[1, 1, 1, 1],
                             [self.l, self.l, -self.l, -self.l], 
                             [-self.l, self.l, self.l, -self.l], 
@@ -52,7 +54,9 @@ class AttitudeController:
         #f = np.linalg.lstsq(self.alloc_matrix, torque)
         #f = f[0]
         # make sure motor forces are within the allowed thrusts
+        #print('before clip', f)
         f = np.clip(f, min=constants.min_thrust, max = constants.max_thrust)
+        #print('after clip', f)
         return f
 
 
