@@ -24,7 +24,7 @@ class Updater:
         self.ax.set_ylabel('Y (m)')
         self.ax.set_zlabel('Z (m)')
         self.ax.set_title('3D Drone Trajectory through Gate')
-        self.ax.legend()
+        #self.ax.legend()
         self.ax.grid(True)
         self.ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
         gate = np.array([

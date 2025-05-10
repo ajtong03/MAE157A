@@ -48,7 +48,7 @@ att = AttitudeController(params, dt)
 
 
 # initialise trajectory
-traj = trajectory.traj
+traj = np.array(trajectory.traj)
 # print(traj, 'end')
 p_start = traj[0][1:4]
 #print('start', p_start)
@@ -70,6 +70,7 @@ data = np.append(data,f)
 # initilize 3D plot
 sim = Updater()
 states = []
+thrust_profile = []
 # Simulation loop
 
 for i in range(len(traj)):
@@ -88,6 +89,8 @@ for i in range(len(traj)):
 
     q_d, w_d, thrust = pos.posController(state_cur, target_state, a_d, j_d)
 
+    thrust_profile.append(thrust.copy())
+
     target_state[6:10] = q_d
     target_state[10:13] = w_d
 
@@ -95,6 +98,7 @@ for i in range(len(traj)):
     f = att.getForces(torque, thrust)
     state_cur = dyn.propagate(state_cur, f)
     print('current ', state_cur[0:3])
+
     states.append(state_cur.copy())
     # If z to low then indicate crash and end simulation
     '''
@@ -125,11 +129,29 @@ if save_data:
 
 # --- run animation ------------------------------------------------
 sim.initializePlot()
-
+anim_fig = plt.figure()
 def animate(i):
     if i < len(states):
         return sim.updatePlot(states[i], dyn)
 #frames = int((trajectory.tf + trajectory.tf1)/dt) + 1
-ani = animation.FuncAnimation(plt.gcf(), animate, frames=len(states), interval=dt*1000, blit=False, repeat = False)
+ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt*1000, blit=False, repeat = False)
+
+# ---------- plot thrust and velocity profiles ----------
+states = np.array(states)
+thrust_profile = np.array(thrust_profile)
+
+vel_fig = plt.figure(2)
+time = traj[:, 0]
+plt.plot(time, states[:, 3], label = 'x velocity')
+plt.plot(time, states[:, 4], label = 'y velocity')
+plt.plot(time, states[:, 5], label = 'z velocity')
+plt.title('Velocity Profile')
+plt.legend()
+
+thrust_fig = plt.figure(3)
+plt.plot(time, thrust_profile, label = 'thrust magnitude')
+plt.title('Thrust Profile')
+plt.legend()
+
 plt.show()
 
