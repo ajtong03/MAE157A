@@ -15,11 +15,10 @@ class AttitudeController:
             [-1.07e-7, -2.01e-7,  4.55e-3]
         ])
         self.l = 0.07                 # Moment Arm (m)
-        self.c = 0.2# 0131               # Propeller Drag Coefficient (N·m/(N)^2)
+        self.c = 0.2 # 0131               # Propeller Drag Coefficient (N·m/(N)^2)
         self.dt = dt                  # integration timestep (s)
 
         # add 10% margin for min and max thrusts
-
         self.minForce = 0.05433327 * 9.81  * 1.1 #N
         self.maxForce = 0.392966325 * 9.81 * 0.9#N
 

@@ -21,11 +21,10 @@ class PositionController:
         self.minThrust = 4 * 0.05433327 * 9.81 * 1.1 #N
         self.maxThrust = 4* 0.392966325 * 9.81 * 0.9 #N
 
+# ------------------------------ POSITION CONTROLLER ------------------------------- 
+# --------- determine the desired quaternion, angular velocity, and thrust ---------
+
     def posController(self, state, target_state, a_d: np.ndarray, j_d: np.ndarray):
-        #Kp = np.diag([50.5, 52, 108.5])
-        #Kd = np.diag([65.0, 55.0, 63.0])
-        #Kp = np.diag([1.59, 1.57, 3.07])
-        #Kd = np.diag([1.05, 1.0,  1.73])
         Kp = np.diag([7.9, 7.7, 10.77])
         Kd = np.diag([5.5, 5,  10.53])
         
@@ -68,6 +67,7 @@ class PositionController:
         w_d[2] = 0
         return q_d, w_d, thrust
     
+# ------------------- COMPUTE ACCELERATION ERROR TO HELP DETERMINE GAINS --------------------
     def getAccelError(self, state, target_state, a_d:np.ndarray, Kp, Kd):
 
         p = state[0:3]

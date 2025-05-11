@@ -71,6 +71,28 @@ def jz_t(t):
     return 6 * c_z[3] + 24 * c_z[4] * t + 60 * c_z[5] * t**2 + 120 * c_z[6] * t**3 + 210 * c_z[7] * t**4
 
 
+def traj_State(t):
+    x = x_t(t)
+    y = y_t(t)
+    z = z_t(t)
+
+    vx = vx_t(t)
+    vy = vy_t(t)
+    vz = vz_t(t)
+
+    ax = ax_t(t)
+    ay = ay_t(t)
+    az = az_t(t)
+
+    jx = jx_t(t)
+    jy = jy_t(t)
+    jz = jz_t(t)
+
+    state = np.array([x, y, z, vx, vy, vz, ax, ay, az, jx, jy, jz])
+
+    return state
+
+
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
 tf1 =  4.55 # seconds

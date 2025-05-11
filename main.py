@@ -48,11 +48,11 @@ att = AttitudeController(params, dt)
 
 
 # initialise trajectory
-traj = np.array(trajectory.traj)
+traj_start = trajectory.traj_State(0)
 # print(traj, 'end')
-p_start = traj[0][1:4]
+p_start = traj_start[0:3]
 #print('start', p_start)
-v_start = traj[0][4:7]
+v_start = traj_start[3:6]
 q_start = [1.0, 0., 0., 0.]
 w_start = [0., 0., 0.] # in radians
 
@@ -66,16 +66,20 @@ data = np.append(t,state_cur)
 data = np.append(data,f)
 
 
-
 # initilize 3D plot
 sim = Updater()
 states = []
 thrust_profile = []
+time = []
 # Simulation loop
 
-for i in range(len(traj)):
+t = 0.0
+running = True
+while running:
     # Get new desired state from trajectory planner
-    t, xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = traj[i]
+    xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = trajectory.traj_State(t)
+
+    time.append(t)
     # print('vel: ', vx_d, ' ', vy_d, ' ', vz_d)
     a_d = np.array([ax_d, ay_d, az_d])
     # p_d = np.array([xd, yd, zd])
@@ -106,8 +110,11 @@ for i in range(len(traj)):
         print("CRASH!!!")
         break
     '''
-    if t == tf:
+
+    t += dt
+    if t >= tf:
         # break if the end of the trajectory has been reached
+        running = False
         print('End of trajectory reached')
         break
     
@@ -141,7 +148,7 @@ states = np.array(states)
 thrust_profile = np.array(thrust_profile)
 
 vel_fig = plt.figure(2)
-time = traj[:, 0]
+time = np.array(time)
 plt.plot(time, states[:, 3], label = 'x velocity')
 plt.plot(time, states[:, 4], label = 'y velocity')
 plt.plot(time, states[:, 5], label = 'z velocity')
