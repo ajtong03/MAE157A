@@ -139,8 +139,9 @@ def az_t1(t):
 def jz_t1(t):
     return 6 * c_z1[3] + 24 * c_z1[4] * t + 60 * c_z1[5] * t**2 + 120 * c_z1[6] * t**3 + 210 * c_z1[7] * t**4
 
-# -------------------- TRAJECTORY STATE AT ANY GIVEN TIME --------------------
-# ------------ return the state of the trajectory at any time t --------------
+
+# ------------------------------------------ RETURN STATE AT ANY TIME t FOR TRAJECTORY ------------------------------------------- 
+# -------------- given a time t, return the position, velocity, acceleration, and jerk of the trajectory at that point -----------
 def traj_State(t):
     
     if t <= tf:
@@ -178,15 +179,18 @@ def traj_State(t):
     state = np.array([x, y, z, vx, vy, vz, ax, ay, az, jx, jy, jz])
 
     return state
+
+
 # Separately plot polynomials (best to see distance it covers)
 
 # change as necessary
+'''
 plt.figure(figsize=(8, 6))
 #plt.plot(time_approach, [x_t(t) for t in time_approach], label="Position")
-plt.plot(time_approach, [vx_t1(t) for t in time_departure], label="xVelocity")
-plt.plot(time_approach, [vy_t1(t) for t in time_departure], label="yVelocity")
+plt.plot(time_approach, [vx_t(t) for t in time_approach], label="xVelocity")
+plt.plot(time_approach, [vy_t(t) for t in time_approach], label="yVelocity")
 
-plt.plot(time_approach, [vz_t1(t) for t in time_departure], label="zVelocity")
+plt.plot(time_approach, [vz_t(t) for t in time_approach], label="zVelocity")
 #plt.plot(time_values, [ax_t(t) for t in time_departure], label="Acceleration")
 #plt.plot(time_values, [jx_t(t) for t in time_departure], label = "Jerk")
 plt.title("X-Direction Trajectory (departure segment)")
@@ -195,7 +199,7 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
-
+'''
 # Generate trajectory data for both segments
 x_traj_approach = [x_t(t) for t in time_approach]
 y_traj_approach = [y_t(t) for t in time_approach]
@@ -354,3 +358,21 @@ ax.set_title('3D Drone Trajectory through Gate')
 ax.legend()
 ax.grid(True)
 plt.show()
+'''
+feasible = True
+for i in range(len(time_full)):
+    pos = np.array([x_traj[i], y_traj[i], z_traj[i]])
+    vel = np.array([vx_traj[i], vy_traj[i], vz_traj[i]])
+    acc = np.array([ax_traj[i], ay_traj[i], az_traj[i]])
+    j_d = np.array([jx_traj[i], jy_traj[i], jz_traj[i]])
+
+    thrusts = PositionController.posController(pos, vel, acc, j_d,gate_normal)
+    
+    if T_mag > T_max or T_mag < T_min:
+        feasible = False
+        print(f"Trajectory is NOT feasible at t = {time_full[i]:.2f} s. Thrusts: {thrusts}")
+        break
+
+if feasible:
+    print("Trajectory is feasible over the entire duration.")
+'''
