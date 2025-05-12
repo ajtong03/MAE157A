@@ -101,7 +101,7 @@ tf1 =  3.75 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 1.5, 0.5, 0, -1, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, 1.5, 0.5, 0, -1.25, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -259,7 +259,7 @@ g = 9.81
 T_vector = np.vstack(m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2))
 T_mag = np.linalg.norm(T_vector, axis=0)
 
-print('Thrust Vector: ',T_vector)
+
 print('Thrust Mag: ', T_mag)
 
 # to obtain the correct thrust orientation and aligned with gate
@@ -279,29 +279,23 @@ def compute_orientation_quaternion(ax, ay, az):
             axis = cross_prod / np.linalg.norm(cross_prod)
             angle = np.arccos(np.clip(dot_prod, -1,1))
             return R.from_rotvec(angle*axis).as_quat()
+# to check if trajectory is feasible
+params = [g]
+dt = time_full[1] - time_full[0]
+position_controller = PositionController(params,dt)
+T_min = position_controller.minThrust
+T_max = position_controller.maxThrust
 
-'''
-WIP 
-def check_motor_thrust
-    
-def get_thrust_vector_and_quaternion(t):
-    """Return thrust vector and orientation quaternion at time t."""
-    if t <= tf:
-        ax = ax_t(t)
-        ay = ay_t(t)
-        az = az_t(t)
-    else:
-        t1 = t - tf
-        ax = ax_t1(t1)
-        ay = ay_t1(t1)
-        az = az_t1(t1)
+feasible = True
+for i in range(len(time_full)):
+    if T_mag > T_max or T_mag < T_min:
+        feasible = False
+        print(f"Trajectory is NOT feasible at t = {time_full[i]:.2f} s. Thrusts: {T_mag}")
+        break
 
-    q = compute_orientation_quaternion(ax, ay, az)
-    return np.array([ax, ay, (az + 9.81)]), q
-thrust_vec, quat= get_thrust_vector_and_quaternion(tf)
-print('Thrust vector:', thrust_vec)
-print('Quaternion [x,y,z,w]', quat)
-'''
+if feasible:
+    print("Trajectory is feasible over the entire duration.")
+
 # 3D Plot
 fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
@@ -358,21 +352,3 @@ ax.set_title('3D Drone Trajectory through Gate')
 ax.legend()
 ax.grid(True)
 plt.show()
-'''
-feasible = True
-for i in range(len(time_full)):
-    pos = np.array([x_traj[i], y_traj[i], z_traj[i]])
-    vel = np.array([vx_traj[i], vy_traj[i], vz_traj[i]])
-    acc = np.array([ax_traj[i], ay_traj[i], az_traj[i]])
-    jer = np.array([jx_traj[i], jy_traj[i], jz_traj[i]])
-
-    thrusts = PositionController.posController(pos, vel, acc, jer,gate_normal)
-    
-    if T_mag > T_max or T_mag < T_min:
-        feasible = False
-        print(f"Trajectory is NOT feasible at t = {time_full[i]:.2f} s. Thrusts: {thrusts}")
-        break
-
-if feasible:
-    print("Trajectory is feasible over the entire duration.")
-'''
