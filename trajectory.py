@@ -139,6 +139,48 @@ def az_t1(t):
 def jz_t1(t):
     return 6 * c_z1[3] + 24 * c_z1[4] * t + 60 * c_z1[5] * t**2 + 120 * c_z1[6] * t**3 + 210 * c_z1[7] * t**4
 
+
+# ------------------------------------------ RETURN STATE AT ANY TIME t FOR TRAJECTORY ------------------------------------------- 
+# -------------- given a time t, return the position, velocity, acceleration, and jerk of the trajectory at that point -----------
+def traj_State(t):
+    
+    if t <= tf:
+        x = x_t(t)
+        y = y_t(t)
+        z = z_t(t)
+
+        vx = vx_t(t)
+        vy = vy_t(t)
+        vz = vz_t(t)
+
+        ax = ax_t(t)
+        ay = ay_t(t)
+        az = az_t(t)
+
+        jx = jx_t(t)
+        jy = jy_t(t)
+        jz = jz_t(t)
+    else:
+        x = x_t1(t)
+        y = y_t1(t)
+        z = z_t1(t)
+
+        vx = vx_t1(t)
+        vy = vy_t1(t)
+        vz = vz_t1(t)
+
+        ax = ax_t1(t)
+        ay = ay_t1(t)
+        az = az_t1(t)
+
+        jx = jx_t1(t)
+        jy = jy_t1(t)
+        jz = jz_t1(t)
+    state = np.array([x, y, z, vx, vy, vz, ax, ay, az, jx, jy, jz])
+
+    return state
+
+
 # Separately plot polynomials (best to see distance it covers)
 
 # change as necessary
