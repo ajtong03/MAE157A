@@ -97,11 +97,11 @@ def traj_State(t):
 
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
-tf1 =  4.10 # seconds
+tf1 =  3.75 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 1.5, 0.5, 0, -1.25, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, 1.5, 0.5, 0, -1, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -316,15 +316,15 @@ ax.set_title('3D Drone Trajectory through Gate')
 ax.legend()
 ax.grid(True)
 plt.show()
-
+'''
 feasible = True
 for i in range(len(time_full)):
     pos = np.array([x_traj[i], y_traj[i], z_traj[i]])
     vel = np.array([vx_traj[i], vy_traj[i], vz_traj[i]])
     acc = np.array([ax_traj[i], ay_traj[i], az_traj[i]])
-    j_d = np.array([jx_traj[i], jy_traj[i], jz_traj[i]])
+    jer = np.array([jx_traj[i], jy_traj[i], jz_traj[i]])
 
-    thrusts = PositionController.posController(pos, vel, acc, j_d,gate_normal)
+    thrusts = PositionController.posController(pos, vel, acc, jer,gate_normal)
     
     if T_mag > T_max or T_mag < T_min:
         feasible = False
@@ -333,3 +333,4 @@ for i in range(len(time_full)):
 
 if feasible:
     print("Trajectory is feasible over the entire duration.")
+'''
