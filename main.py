@@ -105,11 +105,10 @@ while running:
 
     states.append(state_cur.copy())
     # If z to low then indicate crash and end simulation
-    '''
     if state_cur[2] < 0.1:
-        print("CRASH!!!")
-        break
-    '''
+        if t > 2:
+            print("CRASH!!!")
+            break
 
     t += dt
     if t >= tf:

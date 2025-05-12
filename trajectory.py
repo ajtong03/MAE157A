@@ -5,6 +5,8 @@ from math import sin,cos, tan
 from dynamics import dynamics   # import the class, not the module
 import matplotlib.animation as animation
 from scipy.spatial.transform import Rotation as R
+from PositionController import PositionController
+
 
 #-------polynomial tracking --------------------------------
 def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
@@ -95,11 +97,11 @@ def traj_State(t):
 
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
-tf1 =  4.55 # seconds
+tf1 =  4.10 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 1.5, 0.5, 0, -1.5, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, 1.5, 0.5, 0, -1.25, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -124,7 +126,7 @@ def jy_t1(t):
     return 6 * c_y1[3] + 24 * c_y1[4] * t + 60 * c_y1[5] * t**2 + 120 * c_y1[6] * t**3 + 210 * c_y1[7] * t**4
 
 # z - dir 
-c_z1 = solve_polynomial_coefficients(tf1, 1, 0.1, 0, 0, 0, 0, 0, 0)
+c_z1 = solve_polynomial_coefficients(tf1, 1, 0.5, 0, 0, 0, 0, 0, 0)
 print("z-coeffs:", c_z1)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 # needs to counteract gravity in this case 
@@ -137,15 +139,56 @@ def az_t1(t):
 def jz_t1(t):
     return 6 * c_z1[3] + 24 * c_z1[4] * t + 60 * c_z1[5] * t**2 + 120 * c_z1[6] * t**3 + 210 * c_z1[7] * t**4
 
+# -------------------- TRAJECTORY STATE AT ANY GIVEN TIME --------------------
+# ------------ return the state of the trajectory at any time t --------------
+def traj_State(t):
+    
+    if t <= tf:
+        x = x_t(t)
+        y = y_t(t)
+        z = z_t(t)
+
+        vx = vx_t(t)
+        vy = vy_t(t)
+        vz = vz_t(t)
+
+        ax = ax_t(t)
+        ay = ay_t(t)
+        az = az_t(t)
+
+        jx = jx_t(t)
+        jy = jy_t(t)
+        jz = jz_t(t)
+    else:
+        x = x_t1(t)
+        y = y_t1(t)
+        z = z_t1(t)
+
+        vx = vx_t1(t)
+        vy = vy_t1(t)
+        vz = vz_t1(t)
+
+        ax = ax_t1(t)
+        ay = ay_t1(t)
+        az = az_t1(t)
+
+        jx = jx_t1(t)
+        jy = jy_t1(t)
+        jz = jz_t1(t)
+    state = np.array([x, y, z, vx, vy, vz, ax, ay, az, jx, jy, jz])
+
+    return state
 # Separately plot polynomials (best to see distance it covers)
 
 # change as necessary
+
+'''
 plt.figure(figsize=(8, 6))
 #plt.plot(time_approach, [x_t(t) for t in time_approach], label="Position")
-plt.plot(time_approach, [vx_t(t) for t in time_approach], label="xVelocity")
-plt.plot(time_approach, [vy_t(t) for t in time_approach], label="yVelocity")
+plt.plot(time_approach, [vx_t1(t) for t in time_departure], label="xVelocity")
+plt.plot(time_approach, [vy_t1(t) for t in time_departure], label="yVelocity")
 
-plt.plot(time_approach, [vz_t(t) for t in time_approach], label="zVelocity")
+plt.plot(time_approach, [vz_t1(t) for t in time_departure], label="zVelocity")
 #plt.plot(time_values, [ax_t(t) for t in time_departure], label="Acceleration")
 #plt.plot(time_values, [jx_t(t) for t in time_departure], label = "Jerk")
 plt.title("X-Direction Trajectory (departure segment)")
@@ -154,6 +197,7 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
+'''
 
 # Generate trajectory data for both segments
 x_traj_approach = [x_t(t) for t in time_approach]
@@ -217,7 +261,7 @@ T_mag = np.linalg.norm(T_vector, axis=0)
 print('Thrust Vector: ',T_vector)
 print('Thrust Mag: ', T_mag)
 
-# WIP to obtain the correct thrust orientation and aligned with gate
+# to obtain the correct thrust orientation and aligned with gate
 def compute_orientation_quaternion(ax, ay, az):
     thrust_vector = np.array([ax,ay,(az+9.81)])
     thrust_unit = thrust_vector / np.linalg.norm(thrust_vector)
@@ -234,6 +278,7 @@ def compute_orientation_quaternion(ax, ay, az):
             axis = cross_prod / np.linalg.norm(cross_prod)
             angle = np.arccos(np.clip(dot_prod, -1,1))
             return R.from_rotvec(angle*axis).as_quat()
+
 '''
 WIP 
 def check_motor_thrust
@@ -267,6 +312,7 @@ ax.quiver(
     ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
     length=0.2, normalize=True, color='r', label='acceleration vectors')
 # Gate
+gate_origin = np.array([0, 0, 1])  # Define gate origin explicitly
 ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 gate = np.array([
     [-0.5, 0, -0.25],
@@ -311,3 +357,22 @@ ax.set_title('3D Drone Trajectory through Gate')
 ax.legend()
 ax.grid(True)
 plt.show()
+
+'''
+feasible = True
+for i in range(len(time_full)):
+    pos = np.array([x_traj[i], y_traj[i], z_traj[i]])
+    vel = np.array([vx_traj[i], vy_traj[i], vz_traj[i]])
+    acc = np.array([ax_traj[i], ay_traj[i], az_traj[i]])
+    j_d = np.array([jx_traj[i], jy_traj[i], jz_traj[i]])
+
+    thrusts = PositionController.posController(pos, vel, acc, j_d,gate_normal)
+    
+    if T_mag > T_max or T_mag < T_min:
+        feasible = False
+        print(f"Trajectory is NOT feasible at t = {time_full[i]:.2f} s. Thrusts: {thrusts}")
+        break
+
+if feasible:
+    print("Trajectory is feasible over the entire duration.")
+'''
