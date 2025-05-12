@@ -53,13 +53,13 @@ class PositionController:
         e = np.array([0, 0, 1])
 
 
-        multiplier = 1 / np.sqrt(2 * (1 + np.dot(e.T, a_hat)))
-        qw =  1 + np.dot(e.T, a_hat)
+        multiplier = 1 / np.sqrt(2 * (1 + e.T @ a_hat))
+        qw =  1 + e.T @ a_hat
         vec = np.cross(e, a_hat)
         q_d = multiplier * np.array([qw, vec[0], vec[1], vec[2]])
 
         R_d = quat_to_rot(q_d)
-        ahat_dot = 1 / np.linalg.norm(a) * (j_d - np.dot(a_hat.T, j_d) * a_hat)
+        ahat_dot = 1 / np.linalg.norm(a) * (j_d - (a_hat.T @ j_d) * a_hat)
         w = R_d.T @ ahat_dot
         w_d = np.zeros(3)
         w_d[0] = -w[1]

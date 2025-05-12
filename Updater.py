@@ -76,4 +76,4 @@ class Updater:
         self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],Rmat[0,0], Rmat[1,0], Rmat[2,0], color = 'r', length=0.3))
         self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],Rmat[0,1],Rmat[1,1],Rmat[2,1], color = 'g', length=0.3))
         self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],Rmat[0,2],Rmat[1,2],Rmat[2,2], color = 'b', length=0.3))
-        return self.trail, self.arm1, self.arm2
+        return [self.trail, self.arm1, self.arm2] + self.axis_arrows

@@ -105,7 +105,7 @@ error_data = np.append(t, err)
 #print(Kd)
 
 # Simulation loop
-runningA = True
+runningA = False
 testingA = runningA
 while runningA:
    # print(t)
@@ -191,7 +191,7 @@ error_a = np.empty((0, 2))
 ae_x = np.empty((0, 2))
 ae_y = np.empty((0, 2))
 ae_z = np.empty((0, 2))
-runningP = False
+runningP = True
 testingP = runningP
 
 while runningP:

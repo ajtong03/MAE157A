@@ -144,6 +144,7 @@ def animate(i):
 ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt*1000, blit=False, repeat = False)
 
 # ---------- plot thrust and velocity profiles ----------
+
 states = np.array(states)
 thrust_profile = np.array(thrust_profile)
 
