@@ -37,6 +37,10 @@ def deriv(q1, w):
     q_deriv = 0.5 * product(q1, w_quat)
     return q_deriv
 
+def get_qdot(q, w):
+    w_quat = np.array([0, *w])
+    return 0.5 * product(q, w_quat)
+
 def euler_to_quat(phi, theta, psi):
     w = np.cos(phi/2)*np.cos(theta/2)*np.cos(psi/2) + np.sin(phi/2)*np.sin(theta/2)*np.sin(psi/2)
     x = np.sin(phi/2)*np.cos(theta/2)*np.cos(psi/2) - np.cos(phi/2)*np.sin(theta/2)*np.sin(psi/2)

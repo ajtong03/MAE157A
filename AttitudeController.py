@@ -1,6 +1,6 @@
 import constants
 import numpy as np
-import quaternionfunc as qf
+from quaternionfunc import *
 from dynamics import dynamics as dyn 
 
 class AttitudeController:
@@ -30,9 +30,9 @@ class AttitudeController:
                             [self.c,-self.c, self.c,-self.c]])
 
         # these gains are set after testing different gain values to see which converge the best 
-        self.Kp = np.diag([19, 18,20])
-        self.Kd = np.diag([1.5, 1.5, 1.5])
-    
+        self.Kp = np.diag([5.5, 5.5, 4.96])
+        self.Kd = np.diag([.13, .146, .25])
+        self.lam = np.array([0.15, 0.17, 0.15])
     
     #---------- ATTITUDE CONTROLLER GIVEN CURRENT AND TARGET STATES ----------#
     def attController(self, state, target_state):
@@ -44,7 +44,7 @@ class AttitudeController:
         q_d = target_state[6:10]
         q_d = q_d / np.linalg.norm(q_d)
         w_d = target_state[10:13]
-        torque = self.computeTorqueNaive(self.Kp, self.Kd, q, q_d, w, w_d)
+        torque = self.computeTorque(self.Kp, self.Kd, self.lam, q, q_d, w, w_d)
 
         return torque
 
@@ -62,10 +62,10 @@ class AttitudeController:
         return f
 
 
-    #------------------------COMPUTE TORQUES--------------------------#
+    #------------------------COMPUTE TORQUES (NAIVE) --------------------------#
     @staticmethod
     def computeTorqueNaive(Kp, Kd, q_act, q_d, w, w_d):
-        q_e = qf.error(q_act, q_d)
+        q_e = error(q_act, q_d)
         w_e = w - w_d
 
         # real part
@@ -73,7 +73,24 @@ class AttitudeController:
         # vector part
         vec = q_e[1:]
 
-        torque = -alpha * np.matmul(Kp, vec) - np.matmul(Kd, w_e)
+        torque = -alpha * Kp @ vec - Kd @ w_e
+        return np.array(torque)
+    
+    #------------------------COMPUTE TORQUES (NAIVE) --------------------------#
+    # @staticmethod
+    def computeTorque(self, Kp, Kd, lam, q_act, q_d, w, w_d):
+        qe = error(q_act, q_d)
+        Re = quat_to_rot(qe)
+        w_e = w - Re @ w_d
+        qe_dot = get_qdot(q_d, w_e)
+
+        # sign
+        sgn = 1 if qe[0] >= 0 else -1
+        # vector part
+        vec = qe[1:]
+
+
+        torque = -sgn * Kp @ vec - Kd @ w_e - lam * sgn * qe_dot[1:]
         return np.array(torque)
     
 
@@ -91,7 +108,19 @@ class AttitudeController:
         q_d = target_state[6:10]
         q_d = q_d / np.linalg.norm(q_d)
         w_d = target_state[10:13]
-        #torque = self.computeTorqueNaive(Kp, Kd, q, q_d, w, w_d)
+        torque = self.computeTorque(Kp, Kd, self.lam, q, q_d, w, w_d)
+
+        return torque
+    
+    def attController_testNaive(self, state, target_state, Kp, Kd):
+        #Kp = constants.Kp_a
+        #Kd = constants.Kd_a
+
+        q = state[6:10]
+        w = state[10:13]
+        q_d = target_state[6:10]
+        q_d = q_d / np.linalg.norm(q_d)
+        w_d = target_state[10:13]
         torque = self.computeTorqueNaive(Kp, Kd, q, q_d, w, w_d)
 
         return torque
@@ -133,7 +162,7 @@ class AttitudeController:
                 q_a = state_current[6:10] 
                 print(q_a)
 
-                temp = qf.error(q_a, q_d)
+                temp = error(q_a, q_d)
 
                 # store the magnitude of the error
                 error[j] = np.linalg.norm(temp)
@@ -186,7 +215,7 @@ class AttitudeController:
             kd_gains[i] = [kd1, kd2, kd3]
 
             q_d = attitude
-            err_min = np.linalg.norm(qf.error(state[6:10], q_d))
+            err_min = np.linalg.norm(error(state[6:10], q_d))
             testState = state
             while t < tf:
                 torque = self.computeTorqueNaive(Kp, Kd, testState[6:10], q_d, testState[10:13], 0) 
@@ -201,7 +230,7 @@ class AttitudeController:
                 newState = dynam.propagate(testState, f, self.dt)
                 q_a = newState[6:10] 
                 print(q_a)
-                err = qf.error(q_a, q_d)
+                err = error(q_a, q_d)
                 print('error')
                 # store the magnitude of the error
                 err = np.linalg.norm(err)

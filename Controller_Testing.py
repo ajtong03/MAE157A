@@ -52,7 +52,7 @@ state[11] = 0.
 state[12] = 0.
 
 # Final time
-tf = 5.
+tf = 0.4
 
 # Simulation rate
 rate = 500
@@ -110,8 +110,10 @@ testingA = runningA
 while runningA:
    # print(t)
     # Propagate dynamics with control inputs
-    Kp = np.diag([4.1, 4.0, 4.5])
-    Kd = np.diag([.28, .25, .52])
+    Kp = np.diag([5.5, 5.5, 4.96])
+    Kd = np.diag([.13, .146, .25])
+    #Kp = np.diag([19, 18, 20])
+    #Kd = np.diag([1.5, 1.5, 1.5])
     #Kp = np.diag([5, 5, 5])
     #Kd = np.diag([2.5, 2, 2.5])
 
@@ -143,13 +145,13 @@ if testingA == True:
     q_z = error_data[:, 4]
 
     plt.figure(1)
-    plt.plot(time, q_w, label = 'q_w')
+    #plt.plot(time, q_w, label = 'q_w')
     plt.plot(time, q_x, label = 'q_x')
     plt.plot(time, q_y, label = 'q_y')
     plt.plot(time, q_z, label = 'q_z')
     plt.legend()
     plt.grid(True)
-    # plt.show()
+    plt.show()
 
 
 # If save_data flag is true then save data
@@ -189,7 +191,7 @@ error_a = np.empty((0, 2))
 ae_x = np.empty((0, 2))
 ae_y = np.empty((0, 2))
 ae_z = np.empty((0, 2))
-runningP = True
+runningP = False
 testingP = runningP
 
 while runningP:
