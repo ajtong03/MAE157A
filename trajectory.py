@@ -181,8 +181,6 @@ def traj_State(t):
 # Separately plot polynomials (best to see distance it covers)
 
 # change as necessary
-
-'''
 plt.figure(figsize=(8, 6))
 #plt.plot(time_approach, [x_t(t) for t in time_approach], label="Position")
 plt.plot(time_approach, [vx_t1(t) for t in time_departure], label="xVelocity")
@@ -197,7 +195,6 @@ plt.ylabel("Value")
 plt.legend()
 plt.grid(True)
 plt.show()
-'''
 
 # Generate trajectory data for both segments
 x_traj_approach = [x_t(t) for t in time_approach]
@@ -357,22 +354,3 @@ ax.set_title('3D Drone Trajectory through Gate')
 ax.legend()
 ax.grid(True)
 plt.show()
-
-'''
-feasible = True
-for i in range(len(time_full)):
-    pos = np.array([x_traj[i], y_traj[i], z_traj[i]])
-    vel = np.array([vx_traj[i], vy_traj[i], vz_traj[i]])
-    acc = np.array([ax_traj[i], ay_traj[i], az_traj[i]])
-    j_d = np.array([jx_traj[i], jy_traj[i], jz_traj[i]])
-
-    thrusts = PositionController.posController(pos, vel, acc, j_d,gate_normal)
-    
-    if T_mag > T_max or T_mag < T_min:
-        feasible = False
-        print(f"Trajectory is NOT feasible at t = {time_full[i]:.2f} s. Thrusts: {thrusts}")
-        break
-
-if feasible:
-    print("Trajectory is feasible over the entire duration.")
-'''
