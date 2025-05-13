@@ -81,16 +81,13 @@ while running:
     xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = trajectory.traj_State(t)
 
     time.append(t)
-    # print('vel: ', vx_d, ' ', vy_d, ' ', vz_d)
     a_d = np.array([ax_d, ay_d, az_d])
-    # p_d = np.array([xd, yd, zd])
-    # print(p_d)
     j_d = np.array([jx_d, jy_d, jz_d])
 
     target_state = np.zeros(13)
     target_state[0:3] = np.array([xd, yd, zd])
     target_state[3:6] = np.array([vx_d, vy_d, vz_d])
-    print('target ', target_state[0:3])
+    #print('target ', target_state[0:3])
 
     q_d, w_d, thrust = pos.posController(state_cur, target_state, a_d, j_d)
 
@@ -103,7 +100,7 @@ while running:
     f = att.getForces(torque, thrust)
     motor_forces.append(f.copy())
     state_cur = dyn.propagate(state_cur, f)
-    print('current ', state_cur[0:3])
+    #print('current ', state_cur[0:3])
 
     states.append(state_cur.copy())
     # If z to low then indicate crash and end simulation
@@ -142,32 +139,31 @@ states = np.array(states)
 thrust_profile = np.array(thrust_profile)
 motor_forces = np.array(motor_forces)
 
-# vel_fig = plt.figure(2)
-# time = np.array(time)
-# plt.plot(time, states[:, 3], label = 'x velocity')
-# plt.plot(time, states[:, 4], label = 'y velocity')
-# plt.plot(time, states[:, 5], label = 'z velocity')
-# plt.title('Velocity Profile')
-# plt.legend()
+vel_fig = plt.figure(2)
+time = np.array(time)
+plt.plot(time, states[:, 3], label = 'x velocity')
+plt.plot(time, states[:, 4], label = 'y velocity')
+plt.plot(time, states[:, 5], label = 'z velocity')
+plt.title('Velocity Profile')
+plt.legend()
 
-# thrust_fig = plt.figure(3)
-# plt.plot(time, thrust_profile, label = 'thrust magnitude')
-# plt.title('Thrust Profile')
-# plt.legend()
+thrust_fig = plt.figure(3)
+plt.plot(time, thrust_profile, label = 'thrust magnitude')
+plt.title('Thrust Profile')
+plt.legend()
 
-# motor_fig = plt.figure(4)
-# plt.plot(time, motor_forces[:, 0], label = 'motor 1')
-# plt.plot(time, motor_forces[:, 1], label = 'motor 2')
-# plt.plot(time, motor_forces[:, 2], label = 'motor 3')
-# plt.plot(time, motor_forces[:, 3], label = 'motor 4')
-# plt.title('Motor Forces Profile')
-# plt.legend()
+motor_fig = plt.figure(4)
+plt.plot(time, motor_forces[:, 0], label = 'motor 1')
+plt.plot(time, motor_forces[:, 1], label = 'motor 2')
+plt.plot(time, motor_forces[:, 2], label = 'motor 3')
+plt.plot(time, motor_forces[:, 3], label = 'motor 4')
+plt.title('Motor Forces Profile')
+plt.legend()
 
 # --- run animation ------------------------------------------------
 sim.initializePlot()
 anim_fig = sim.fig
 def animate(i):
-    print("frame i ", states[i][0:3])
     if i < len(states):
         artists = sim.updateDrone(states[i], dyn)
         return artists

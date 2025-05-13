@@ -25,9 +25,9 @@ class Updater:
         self.ax.set_ylabel('Y (m)')
         self.ax.set_zlabel('Z (m)')
         self.ax.set_title('3D Drone Trajectory through Gate')
-        #self.ax.legend()
         self.ax.grid(True)
         self.ax.plot([0], [0], [1], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
+
         gate = np.array([
             [-0.5, 0, -0.25],
             [ 0.5, 0, -0.25],
@@ -49,7 +49,9 @@ class Updater:
         gate_normal = np.array([0, 0, 1]) @ ty.T
         gate_normal = gate_normal / np.linalg.norm(gate_normal)
         self.ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
-        self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], 'r-', lw= 0.65)
+        self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], '--', color = 'w', lw= 0.75, label = 'trajectory path')
+        self.ax.legend(facecolor = 'lightgrey')
+
         
 
     def updateTrail(self, state, dyn):
@@ -68,28 +70,8 @@ class Updater:
                 np.array([-dyn.l, 0, 0]),
                 np.array([0, dyn.l, 0]),
                 np.array([0, -dyn.l, 0])]
-
-        R = quat_to_rot(state[6:10])
-        pos = state[0:3]
-        world = [R @ offset + pos for offset in offs]
-
-        a,b,c,d = world
-        # self.arm1.set_data([a[0],c[0]],[a[1],c[1]])
-        # self.arm1.set_3d_properties([a[2],c[2]])
-        # self.arm2.set_data([b[0],d[0]],[b[1],d[1]])
-        # self.arm2.set_3d_properties([b[2],d[2]])
-
-        # # update orientation arrows
-        # for art in self.axis_arrows:
-        #     art.remove()
-        # self.axis_arrows = []
-
-        # pos = state[0:3]
-        # self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,0], R[1,0], R[2,0], color = 'r', length=0.3))
-        # self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,1],R[1,1],R[2,1], color = 'g', length=0.3))
-        # self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,2],R[1,2],R[2,2], color = 'b', length=0.3))
         
-        return [self.trail]#, self.arm1, self.arm2, self.axis_arrows]
+        return [self.trail]
     
 
     def updateDrone(self, state, dyn):
