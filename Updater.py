@@ -54,7 +54,7 @@ class Updater:
 
         
 
-    def updateTrail(self, state, dyn):
+    def updateTrail(self, state):
         self.history.append(state[0:3].copy())
 
         pts = np.array(self.history)
@@ -64,12 +64,6 @@ class Updater:
         # update trail line
         self.trail.set_data(pts[:, 0], pts[:, 1])
         self.trail.set_3d_properties(pts[:, 2])
-
-        # draw arms based on new orientation
-        offs = [np.array([dyn.l, 0, 0]),
-                np.array([-dyn.l, 0, 0]),
-                np.array([0, dyn.l, 0]),
-                np.array([0, -dyn.l, 0])]
         
         return [self.trail]
     

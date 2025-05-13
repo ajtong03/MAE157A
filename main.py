@@ -87,9 +87,8 @@ while running:
     target_state = np.zeros(13)
     target_state[0:3] = np.array([xd, yd, zd])
     target_state[3:6] = np.array([vx_d, vy_d, vz_d])
-    #print('target ', target_state[0:3])
 
-    q_d, w_d, thrust = pos.posController(state_cur, target_state, a_d, j_d)
+    q_d, w_d, thrust, a = pos.posController(state_cur, target_state, a_d, j_d)
 
     thrust_profile.append(thrust.copy())
 
@@ -100,7 +99,6 @@ while running:
     f = att.getForces(torque, thrust)
     motor_forces.append(f.copy())
     state_cur = dyn.propagate(state_cur, f)
-    #print('current ', state_cur[0:3])
 
     states.append(state_cur.copy())
     # If z to low then indicate crash and end simulation
@@ -111,6 +109,7 @@ while running:
             print("CRASH!!!")
             break
     '''
+    
     t += dt
     if t >= tf:
         # break if the end of the trajectory has been reached
@@ -124,7 +123,7 @@ while running:
     tmp = np.append(tmp,f)
     data = np.vstack((data,tmp))
 
-    sim.updateTrail(state_cur, dyn)
+    sim.updateTrail(state_cur)
 
 # If save_data flag is true then save data
 if save_data:
