@@ -1,4 +1,4 @@
-import constants
+import unused.constants as constants
 import numpy as np
 from quaternionfunc import *
 class PositionController:
@@ -56,7 +56,8 @@ class PositionController:
         qw =  1 + e.T @ a_hat
         vec = np.cross(e, a_hat)
         q_d = multiplier * np.array([qw, vec[0], vec[1], vec[2]])
-
+        q_d = q_d / np.linalg.norm(q_d)
+        
         R_d = quat_to_rot(q_d)
         ahat_dot = 1 / np.linalg.norm(a) * (j_d - (a_hat.T @ j_d) * a_hat)
         if np.linalg.norm(ahat_dot) == 0:

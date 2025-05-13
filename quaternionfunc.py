@@ -62,6 +62,8 @@ def unitQuat(q):
     return q / np.linalg.norm(q)
 
 def quat_to_rot(q):
+    # normalise q
+    q = q / np.linalg.norm(q)
     w, x, y, z = q
     return np.array([
         [1 - 2*y**2 - 2*z**2,   2*x*y - 2*z*w,       2*x*z + 2*y*w],

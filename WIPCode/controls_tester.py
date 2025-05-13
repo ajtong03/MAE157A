@@ -3,7 +3,7 @@ import random
 from dynamics import dynamics   # import the class, not the module
 import quaternionfunc as qf
 # import controller as ctrl
-import constants
+import unused.constants as constants
 
 # make a local dynamics instance (match your main’s params & dt!)
 _dyn = dynamics(params=[9.81], dt=1.0/50.0)

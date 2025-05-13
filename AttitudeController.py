@@ -1,4 +1,3 @@
-import constants
 import numpy as np
 from quaternionfunc import *
 from dynamics import dynamics as dyn 
@@ -36,10 +35,8 @@ class AttitudeController:
     
     #---------- ATTITUDE CONTROLLER GIVEN CURRENT AND TARGET STATES ----------#
     def attController(self, state, target_state):
-        #Kp = constants.Kp_a
-        #Kd = constants.Kd_a
-
         q = state[6:10]
+        q = q / np.linalg.norm(q)
         w = state[10:13]
         q_d = target_state[6:10]
         q_d = q_d / np.linalg.norm(q_d)
@@ -50,15 +47,11 @@ class AttitudeController:
 
     #----------COMPUTE MOTOR FORCES GIVEN CONTROL GAINS AND RESULTANT TORQUES----------#
     def getForces(self, torque, thrust):
-        # inverse of allocation matrix
-        # A_inv = np.linalg.inv(self.A)
+        
         f = np.linalg.solve(self.A, [thrust, *torque])
-        #f = np.linalg.lstsq(self.alloc_matrix, torque)
-        #f = f[0]    
-        #print('before clip', f)
+        
         # make sure motor forces are within the allowed thrusts
         f = np.clip(f, min=self.minForce, max = self.maxForce)
-        #print('after clip', f)
         return f
 
 

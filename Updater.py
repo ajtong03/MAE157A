@@ -17,7 +17,7 @@ class Updater:
         self.arm2, = self.ax.plot([], [], [], 'k-', lw=2)
     
     def initializePlot(self):
-        self.ax.set_xlim(-2, 2); self.ax.set_ylim(-2, 2); self.ax.set_zlim(0, 4)
+        self.ax.set_xlim(-2, 2)
         self.ax.set_xlim([-2, 2])
         self.ax.set_ylim([-2, 2])
         self.ax.set_zlim([0, 4]) 
@@ -69,12 +69,6 @@ class Updater:
     
 
     def updateDrone(self, state, dyn):
-        self.history.append(state[0:3].copy())
-
-        pts = np.array(self.history)
-        if pts.ndim == 1:
-            pts = pts.reshape(1, -1)
-        
         # draw arms based on new orientation
         offs = [np.array([dyn.l, 0, 0]),
                 np.array([-dyn.l, 0, 0]),

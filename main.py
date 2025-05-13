@@ -72,8 +72,8 @@ states = []
 thrust_profile = []
 motor_forces = []
 time = []
-# Simulation loop
 
+# Simulation loop
 t = 0.0
 running = True
 while running:
@@ -89,7 +89,8 @@ while running:
     target_state[3:6] = np.array([vx_d, vy_d, vz_d])
 
     q_d, w_d, thrust, a = pos.posController(state_cur, target_state, a_d, j_d)
-
+    print('pos', target_state[0:3])
+    print('desired: ', q_d)
     thrust_profile.append(thrust.copy())
 
     target_state[6:10] = q_d
@@ -111,7 +112,7 @@ while running:
     '''
     
     t += dt
-    if t >= tf:
+    if t >= 3:
         # break if the end of the trajectory has been reached
         running = False
         print('End of trajectory reached')
@@ -122,9 +123,7 @@ while running:
     tmp = np.append(t,state_cur)
     tmp = np.append(tmp,f)
     data = np.vstack((data,tmp))
-
-    sim.updateTrail(state_cur)
-
+    
 # If save_data flag is true then save data
 if save_data:
     now = datetime.datetime.now()
@@ -164,8 +163,9 @@ sim.initializePlot()
 anim_fig = sim.fig
 def animate(i):
     if i < len(states):
-        artists = sim.updateDrone(states[i], dyn)
-        return artists
+        tail_artists = sim.updateTrail(states[i])
+        drone_artists = sim.updateDrone(states[i], dyn)
+        return tail_artists + drone_artists
     else:
         return []
 
