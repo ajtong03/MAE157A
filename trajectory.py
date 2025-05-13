@@ -32,7 +32,7 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 tf = 3 # seconds
 time_approach = np.linspace(0, tf, 200)
 
-c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 1.95, 0.5, 0)
+c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 1.95, 0, 0)
 # acceleration must be zero (so it doesnt move forward or backwards going through gate)
 print("x-coeffs:", c_x)
 def x_t(t):
@@ -101,7 +101,7 @@ tf1 =  2.65 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 1.95, 0.5, 0, -0.75, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, 1.95, 0, 0, -0.75, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -121,7 +121,9 @@ def y_t1(t):
 def vy_t1(t):
     return c_y1[1] + 2 * c_y1[2] * t + 3 * c_y1[3] * t**2 + 4 * c_y1[4] * t**3 + 5 * c_y1[5] * t**4 + 6 * c_y1[6] * t**5 + 7 * c_y1[7] * t**6
 def ay_t1(t):
+
     return 2 * c_y1[2] + 6 * c_y1[3] * t + 12 * c_y1[4] * t**2 + 20 * c_y1[ 5] * t**3 + 30 * c_y1[6] * t**4 + 42 * c_y1[7] * t**5 
+
 def jy_t1(t):
     return 6 * c_y1[3] + 24 * c_y1[4] * t + 60 * c_y1[5] * t**2 + 120 * c_y1[6] * t**3 + 210 * c_y1[7] * t**4
 
@@ -261,6 +263,7 @@ T_mag = m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2) # to check feasibil
 #print(T_vector)
 print('Thrust Mag: ', T_mag)
 
+
 # to obtain the correct thrust orientation and aligned with gate
 def compute_orientation_quaternion(ax, ay, az):
     thrust_vector = np.array([ax,ay,(az+9.81)])
@@ -351,3 +354,21 @@ ax.set_title(f'3D Drone Trajectory through Gate')
 ax.legend()
 ax.grid(True)
 plt.show()
+# to check if thrust vector and gate normal align 
+# to double check thrust vector aligns with normal gate 
+thrust_vector_at_gate = np.array([ax_traj[0], ay_traj[0], az_traj[1] + g])  # Get thrust at the first point (assumed to be near the gate)
+normalized_thrust_vector = thrust_vector_at_gate / np.linalg.norm(thrust_vector_at_gate)
+print(thrust_vector_at_gate)
+print(f"Normalized Thrust Vector at Gate: {normalized_thrust_vector}")
+print(f"Normalized Gate Normal: {gate_normal}")
+
+# WIPCalculate the angle between the two normalized vectors, 0-10 degrees is good alignment
+dot_product = np.dot(normalized_thrust_vector, gate_normal)
+angle_in_radians = np.arccos(np.clip(dot_product, -1, 1))  
+angle_in_degrees = np.degrees(angle_in_radians)
+
+print(f"Angle between Thrust Vector and Gate Normal: {angle_in_degrees:.2f} degrees, {angle_in_radians:.2f} radians")
+
+
+# to check the individual motor speeds
+
