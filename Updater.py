@@ -54,7 +54,7 @@ class Updater:
 
         
 
-    def updateTrail(self, state, dyn):
+    def updateTrail(self, state):
         self.history.append(state[0:3].copy())
 
         pts = np.array(self.history)

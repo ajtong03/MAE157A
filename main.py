@@ -124,7 +124,7 @@ while running:
     tmp = np.append(tmp,f)
     data = np.vstack((data,tmp))
 
-    sim.updateTrail(state_cur, dyn)
+    sim.updateTrail(state_cur)
 
 # If save_data flag is true then save data
 if save_data:
