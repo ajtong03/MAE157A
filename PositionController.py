@@ -69,7 +69,7 @@ class PositionController:
             w_d[0] = -w[1]
             w_d[1] = w[0]
             w_d[2] = 0
-        return q_d, w_d, thrust
+        return q_d, w_d, thrust, a
     
 # ------------------- COMPUTE ACCELERATION ERROR TO HELP DETERMINE GAINS --------------------
     def getAccelError(self, state, target_state, a_d:np.ndarray, Kp, Kd):
