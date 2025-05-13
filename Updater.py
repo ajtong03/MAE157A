@@ -52,31 +52,77 @@ class Updater:
         self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], 'r-', lw= 0.65)
         
 
-    def updatePlot(self, state, dyn):
+    def updateTrail(self, state, dyn):
         self.history.append(state[0:3].copy())
+
         pts = np.array(self.history)
-        self.trail.set_data(pts[:,0], pts[:,1])
-        self.trail.set_3d_properties(pts[:,2])
+        if pts.ndim == 1:
+            pts = pts.reshape(1, -1)
+        
+        # update trail line
+        self.trail.set_data(pts[:, 0], pts[:, 1])
+        self.trail.set_3d_properties(pts[:, 2])
+
         # draw arms based on new orientation
         offs = [np.array([dyn.l, 0, 0]),
                 np.array([-dyn.l, 0, 0]),
                 np.array([0, dyn.l, 0]),
                 np.array([0, -dyn.l, 0])]
-        world = []
+
         R = quat_to_rot(state[6:10])
         pos = state[0:3]
         world = [R @ offset + pos for offset in offs]
-        # world.append(world_frame)
+
         a,b,c,d = world
-        self.arm1.set_data([a[0],c[0]],[a[1],c[1]]); self.arm1.set_3d_properties([a[2],c[2]])
-        self.arm2.set_data([b[0],d[0]],[b[1],d[1]]); self.arm2.set_3d_properties([b[2],d[2]])
+        # self.arm1.set_data([a[0],c[0]],[a[1],c[1]])
+        # self.arm1.set_3d_properties([a[2],c[2]])
+        # self.arm2.set_data([b[0],d[0]],[b[1],d[1]])
+        # self.arm2.set_3d_properties([b[2],d[2]])
+
+        # # update orientation arrows
+        # for art in self.axis_arrows:
+        #     art.remove()
+        # self.axis_arrows = []
+
+        # pos = state[0:3]
+        # self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,0], R[1,0], R[2,0], color = 'r', length=0.3))
+        # self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,1],R[1,1],R[2,1], color = 'g', length=0.3))
+        # self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,2],R[1,2],R[2,2], color = 'b', length=0.3))
+        
+        return [self.trail]#, self.arm1, self.arm2, self.axis_arrows]
+    
+
+    def updateDrone(self, state, dyn):
+        self.history.append(state[0:3].copy())
+
+        pts = np.array(self.history)
+        if pts.ndim == 1:
+            pts = pts.reshape(1, -1)
+        
+        # draw arms based on new orientation
+        offs = [np.array([dyn.l, 0, 0]),
+                np.array([-dyn.l, 0, 0]),
+                np.array([0, dyn.l, 0]),
+                np.array([0, -dyn.l, 0])]
+
+        R = quat_to_rot(state[6:10])
+        pos = state[0:3]
+        world = [R @ offset + pos for offset in offs]
+
+        a,b,c,d = world
+        self.arm1.set_data([a[0],c[0]],[a[1],c[1]])
+        self.arm1.set_3d_properties([a[2],c[2]])
+        self.arm2.set_data([b[0],d[0]],[b[1],d[1]])
+        self.arm2.set_3d_properties([b[2],d[2]])
+
         # update orientation arrows
         for art in self.axis_arrows:
             art.remove()
         self.axis_arrows = []
-        Rmat = quat_to_rot(state[6:10])
+
         pos = state[0:3]
-        self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],Rmat[0,0], Rmat[1,0], Rmat[2,0], color = 'r', length=0.3))
-        self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],Rmat[0,1],Rmat[1,1],Rmat[2,1], color = 'g', length=0.3))
-        self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],Rmat[0,2],Rmat[1,2],Rmat[2,2], color = 'b', length=0.3))
-        return [self.trail, self.arm1, self.arm2] + self.axis_arrows
+        self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,0], R[1,0], R[2,0], color = 'r', length=0.3))
+        self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,1],R[1,1],R[2,1], color = 'g', length=0.3))
+        self.axis_arrows.append(self.ax.quiver(pos[0],pos[1],pos[2],R[0,2],R[1,2],R[2,2], color = 'b', length=0.3))
+        
+        return [self.arm1, self.arm2] + self.axis_arrows

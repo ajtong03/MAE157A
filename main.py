@@ -127,7 +127,7 @@ while running:
     tmp = np.append(tmp,f)
     data = np.vstack((data,tmp))
 
-    sim.updatePlot(state_cur, dyn)
+    sim.updateTrail(state_cur, dyn)
 
 # If save_data flag is true then save data
 if save_data:
@@ -142,36 +142,38 @@ states = np.array(states)
 thrust_profile = np.array(thrust_profile)
 motor_forces = np.array(motor_forces)
 
-vel_fig = plt.figure(2)
-time = np.array(time)
-plt.plot(time, states[:, 3], label = 'x velocity')
-plt.plot(time, states[:, 4], label = 'y velocity')
-plt.plot(time, states[:, 5], label = 'z velocity')
-plt.title('Velocity Profile')
-plt.legend()
+# vel_fig = plt.figure(2)
+# time = np.array(time)
+# plt.plot(time, states[:, 3], label = 'x velocity')
+# plt.plot(time, states[:, 4], label = 'y velocity')
+# plt.plot(time, states[:, 5], label = 'z velocity')
+# plt.title('Velocity Profile')
+# plt.legend()
 
-thrust_fig = plt.figure(3)
-plt.plot(time, thrust_profile, label = 'thrust magnitude')
-plt.title('Thrust Profile')
-plt.legend()
+# thrust_fig = plt.figure(3)
+# plt.plot(time, thrust_profile, label = 'thrust magnitude')
+# plt.title('Thrust Profile')
+# plt.legend()
 
-motor_fig = plt.figure(4)
-plt.plot(time, motor_forces[:, 0], label = 'motor 1')
-plt.plot(time, motor_forces[:, 1], label = 'motor 2')
-plt.plot(time, motor_forces[:, 2], label = 'motor 3')
-plt.plot(time, motor_forces[:, 3], label = 'motor 4')
-plt.title('Motor Forces Profile')
-plt.legend()
+# motor_fig = plt.figure(4)
+# plt.plot(time, motor_forces[:, 0], label = 'motor 1')
+# plt.plot(time, motor_forces[:, 1], label = 'motor 2')
+# plt.plot(time, motor_forces[:, 2], label = 'motor 3')
+# plt.plot(time, motor_forces[:, 3], label = 'motor 4')
+# plt.title('Motor Forces Profile')
+# plt.legend()
 
 # --- run animation ------------------------------------------------
 sim.initializePlot()
-anim_fig = plt.figure()
+anim_fig = sim.fig
 def animate(i):
+    print("frame i ", states[i][0:3])
     if i < len(states):
-        return sim.updatePlot(states[i], dyn)
-#frames = int((trajectory.tf + trajectory.tf1)/dt) + 1
-ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt*1000, blit=False, repeat = False)
+        artists = sim.updateDrone(states[i], dyn)
+        return artists
+    else:
+        return []
+
+sim.updateDrone(states[0], dyn)
+ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt, blit=False, repeat = False)
 plt.show()
-
-
-
