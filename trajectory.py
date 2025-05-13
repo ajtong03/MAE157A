@@ -97,7 +97,7 @@ def traj_State(t):
 
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
-tf1 =  4 #2.65 # seconds
+tf1 =  2.65 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
@@ -161,6 +161,7 @@ def traj_State(t):
         jy = jy_t(t)
         jz = jz_t(t)
     else:
+        t = t - tf
         x = x_t1(t)
         y = y_t1(t)
         z = z_t1(t)

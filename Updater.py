@@ -4,6 +4,7 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D  
 from math import sin, cos
 from quaternionfunc import quat_to_euler, quat_to_rot
+from trajectory import traj
 
 class Updater:
     def __init__(self):
@@ -48,6 +49,8 @@ class Updater:
         gate_normal = np.array([0, 0, 1]) @ ty.T
         gate_normal = gate_normal / np.linalg.norm(gate_normal)
         self.ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
+        self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], 'r-', lw= 0.65)
+        
 
     def updatePlot(self, state, dyn):
         self.history.append(state[0:3].copy())

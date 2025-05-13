@@ -25,8 +25,10 @@ class PositionController:
 # --------- determine the desired quaternion, angular velocity, and thrust ---------
 
     def posController(self, state, target_state, a_d: np.ndarray, j_d: np.ndarray):
-        Kp = np.diag([7.9, 7.7, 10.77])
-        Kd = np.diag([5.5, 5,  10.53])
+        #Kp = np.diag([7.9, 7.7, 10.77])
+        #Kd = np.diag([5.5, 5,  10.53])
+        Kp = np.diag([10.9, 10.7, 10.77])
+        Kd = np.diag([4.5, 4.5,  5.53])
         
 
         p = state[0:3]
@@ -60,11 +62,16 @@ class PositionController:
 
         R_d = quat_to_rot(q_d)
         ahat_dot = 1 / np.linalg.norm(a) * (j_d - (a_hat.T @ j_d) * a_hat)
-        w = R_d.T @ ahat_dot
-        w_d = np.zeros(3)
-        w_d[0] = -w[1]
-        w_d[1] = w[0]
-        w_d[2] = 0
+        if np.linalg.norm(ahat_dot) == 0:
+            w_d[0] = 0
+            w_d[1] = 0
+            w_d[2] = 0
+        else:
+            w = R_d.T @ ahat_dot
+            w_d = np.zeros(3)
+            w_d[0] = -w[1]
+            w_d[1] = w[0]
+            w_d[2] = 0
         return q_d, w_d, thrust
     
 # ------------------- COMPUTE ACCELERATION ERROR TO HELP DETERMINE GAINS --------------------

@@ -70,6 +70,7 @@ data = np.append(data,f)
 sim = Updater()
 states = []
 thrust_profile = []
+motor_forces = []
 time = []
 # Simulation loop
 
@@ -100,17 +101,19 @@ while running:
 
     torque = att.attController(state_cur, target_state)
     f = att.getForces(torque, thrust)
+    motor_forces.append(f.copy())
     state_cur = dyn.propagate(state_cur, f)
     print('current ', state_cur[0:3])
 
     states.append(state_cur.copy())
     # If z to low then indicate crash and end simulation
     # t > 2 set arbitrarily so it doesn't "CRASH" at the start
+    '''
     if state_cur[2] < 0.1:
         if t > 2:
             print("CRASH!!!")
             break
-
+    '''
     t += dt
     if t >= tf:
         # break if the end of the trajectory has been reached
@@ -134,19 +137,10 @@ if save_data:
     np.savetxt("../data/"+file_name, data, delimiter=",")
 
 
-# --- run animation ------------------------------------------------
-sim.initializePlot()
-anim_fig = plt.figure()
-def animate(i):
-    if i < len(states):
-        return sim.updatePlot(states[i], dyn)
-#frames = int((trajectory.tf + trajectory.tf1)/dt) + 1
-ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt*1000, blit=False, repeat = False)
-
-# ---------- plot thrust and velocity profiles ----------
-
+# Plot velocity, thrust, and motor forces profiles
 states = np.array(states)
 thrust_profile = np.array(thrust_profile)
+motor_forces = np.array(motor_forces)
 
 vel_fig = plt.figure(2)
 time = np.array(time)
@@ -161,5 +155,23 @@ plt.plot(time, thrust_profile, label = 'thrust magnitude')
 plt.title('Thrust Profile')
 plt.legend()
 
+motor_fig = plt.figure(4)
+plt.plot(time, motor_forces[:, 0], label = 'motor 1')
+plt.plot(time, motor_forces[:, 1], label = 'motor 2')
+plt.plot(time, motor_forces[:, 2], label = 'motor 3')
+plt.plot(time, motor_forces[:, 3], label = 'motor 4')
+plt.title('Motor Forces Profile')
+plt.legend()
+
+# --- run animation ------------------------------------------------
+sim.initializePlot()
+anim_fig = plt.figure()
+def animate(i):
+    if i < len(states):
+        return sim.updatePlot(states[i], dyn)
+#frames = int((trajectory.tf + trajectory.tf1)/dt) + 1
+ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt*1000, blit=False, repeat = False)
 plt.show()
+
+
 
