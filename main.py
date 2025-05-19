@@ -112,7 +112,7 @@ while running:
     '''
     
     t += dt
-    if t >= 3:
+    if t >= tf:
         # break if the end of the trajectory has been reached
         running = False
         print('End of trajectory reached')

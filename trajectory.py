@@ -32,7 +32,7 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 tf = 3.15 # seconds
 time_approach = np.linspace(0, tf, 200)
 
-c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 2.2, 5.506 ,0)
+c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 2.2, 5.506,0)
 # acceleration must be zero (so it doesnt move forward or backwards going through gate)
 print("x-coeffs:", c_x)
 def x_t(t):
@@ -60,7 +60,7 @@ def jy_t(t):
 
 # z - dir 
 # accel how fast v_z is accelerating up/down
-c_z = solve_polynomial_coefficients(tf, 0, 0, 0, 0, 1.75, 0.2, -2.63, 0 )
+c_z = solve_polynomial_coefficients(tf, 0, 0, 0, 0, 1.75, -0.2, -2.63, 0 )
 print("z-coeffs:", c_z)
 # needs to counteract gravity in this case
 def z_t(t):
@@ -101,7 +101,7 @@ tf1 =  2.25 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 2.12, 5.506, 0, -1.5, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, 2.12, 5.506, 0, -1, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -333,17 +333,17 @@ ty = np.array([
 
 # Rotate and translate gate to origin at (0,0,1)
 gate_pts = gate @ ty.T + np.array([0, 0, 1.75])
-gate_normal = np.array([0, 0, 1]) @ ty.T
+gate_normal = np.array([0, 0, 1.75]) @ ty.T
 gate_normal = gate_normal / np.linalg.norm(gate_normal)
 ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
 ax.quiver(
-    0, 0, 1,                    
+    0, 0, 1.75,                    
     gate_normal[0], gate_normal[1], gate_normal[2],  # Components
     length=0.5, color='purple', linewidth=2, label='Gate Normal'
 )
 # thrust vector at gate
 ax.quiver(
-    0, 0, 1,  
+    0, 0, 1.75,  
     T_vector[0], T_vector[1], T_vector[2],
     length=0.1, color='orange', linewidth=2, label='Thrust at Gate'
 )
@@ -351,9 +351,17 @@ ax.quiver(
 
 # to check if thrust vector and gate normal align 
 # to double check thrust vector aligns with normal gate 
+t_gate = tf  # time when drone is at the gate
+gate_idx = np.argmin(np.abs(time_full - t_gate))
+a_gate =  np.array([
+    ax_traj[gate_idx],
+    ay_traj[gate_idx],
+    az_traj[gate_idx] + g  
+])
 thrust_vector_at_gate = np.array([ax_traj[0], ay_traj[0], az_traj[1] + g])  # Get thrust at the first point (assumed to be near the gate)
 normalized_thrust_vector = thrust_vector_at_gate / np.linalg.norm(thrust_vector_at_gate)
-T_mag_gate = np.linalg.norm(thrust_vector_at_gate)
+T_mag_gate = np.linalg.norm(a_gate)
+
 print(thrust_vector_at_gate)
 print(f"Normalized Thrust Vector at Gate: {normalized_thrust_vector}")
 print(f"Normalized Gate Normal: {gate_normal}")
@@ -368,7 +376,7 @@ ax.set_zlim([0, 4])
 ax.set_xlabel('X (m)')
 ax.set_ylabel('Y (m)')
 ax.set_zlabel('Z (m)')
-ax.set_title(f"3D Drone Trajectory through Gate")
+ax.set_title(f"3D Drone Trajectory through Gate, Thrust at Gate = {float(T_mag_gate):.2f} N")
 ax.legend()
 ax.grid(True)
 plt.show()
