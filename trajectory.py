@@ -350,7 +350,7 @@ ty = np.array([
 
 # Rotate and translate gate to origin at (0,0,1)
 gate_pts = gate @ ty.T + np.array([0, 0, 1.75])
-gate_normal = np.array([0, 0, 1.75]) @ ty.T
+gate_normal = np.array([0, 0, -1.75]) @ ty.T
 gate_normal = gate_normal / np.linalg.norm(gate_normal)
 ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
 ax.quiver(
