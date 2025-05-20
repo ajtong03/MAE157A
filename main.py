@@ -89,8 +89,8 @@ while running:
     target_state[3:6] = np.array([vx_d, vy_d, vz_d])
 
     q_d, w_d, thrust, a = pos.posController(state_cur, target_state, a_d, j_d)
-    print('pos', target_state[0:3])
-    print('desired: ', q_d)
+    #print('pos', target_state[0:3])
+    #print('desired: ', q_d)
     thrust_profile.append(thrust.copy())
 
     target_state[6:10] = q_d
@@ -170,5 +170,5 @@ def animate(i):
         return []
 
 sim.updateDrone(states[0], dyn)
-ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt, blit=False, repeat = False)
+ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt/100, blit=False, repeat = False)
 plt.show()
