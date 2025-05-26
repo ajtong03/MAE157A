@@ -6,7 +6,13 @@ from dynamics import dynamics   # import the class, not the module
 import matplotlib.animation as animation
 from scipy.spatial.transform import Rotation as R
 from PositionController import PositionController
+# 1m in y -dir, y acc = -9.4, 2.31°
 
+
+# during OH with the prof, the prof recommend having a neg accel in y-dir (but no velocity in y-dir) 
+# and velocity in x-direction (but no accel in x-dir)
+# no accel in z-dir either
+#trajectories 7+all have y-dir accel, prev ones involved x-dir accel
 
 #-------polynomial tracking --------------------------------
 def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
@@ -32,7 +38,7 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 tf = 3 # seconds
 time_approach = np.linspace(0, tf, 200)
 
-c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 2, 0,0)
+c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 2.05, 0,0)
 # acceleration must be zero (so it doesnt move forward or backwards going through gate)
 print("x-coeffs:", c_x)
 def x_t(t):
@@ -47,7 +53,7 @@ def jx_t(t):
 # y - dir
 # focus on y accel (make sure orientation lines up)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
-c_y = solve_polynomial_coefficients(tf,-0.75, 0, 0, 0, 0, 0, -5.506, 0)
+c_y = solve_polynomial_coefficients(tf,-0.5, 0, 0, 0, 1, 0, -9.40, 0)
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
@@ -97,11 +103,11 @@ def traj_State(t):
 
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
-tf1 =  3 # seconds
+tf1 =  2.95 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 2, 0, 0, 1, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, 2.05, 0, 0, 1.25, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -114,7 +120,7 @@ def jx_t1(t):
     return 6 * c_x1[3] + 24 * c_x1[4] * t + 60 * c_x1[5] * t**2 + 120 * c_x1[6] * t**3 + 210 * c_x1[7] * t**4
 
 # y - dir
-c_y1 = solve_polynomial_coefficients(tf1, 0 , 0, -5.506, 0, 1, 0, 0, 0 )
+c_y1 = solve_polynomial_coefficients(tf1, 1 , 0, -9.4, 0, 1, 0, 0, 0 )
 print("y-coeffs:", c_y1)
 def y_t1(t):
     return c_y1[0] + c_y1[1] * t + c_y1[2] * t**2 + c_y1[3] * t**3 + c_y1[4] * t**4 + c_y1[5] * t**5 + c_y1[6] * t**6 + c_y1[7] * t**7
@@ -128,7 +134,8 @@ def jy_t1(t):
     return 6 * c_y1[3] + 24 * c_y1[4] * t + 60 * c_y1[5] * t**2 + 120 * c_y1[6] * t**3 + 210 * c_y1[7] * t**4
 
 # z - dir 
-c_z1 = solve_polynomial_coefficients(tf1, 1.75, 0, 0, 0, 0, 0, 0, 0)
+#during testing change z-altitude based on how it lands
+c_z1 = solve_polynomial_coefficients(tf1, 1.75, 0, 0, 0, 0.09, 0, 0, 0)
 print("z-coeffs:", c_z1)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 # needs to counteract gravity in this case 
@@ -276,7 +283,7 @@ v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
 m = 0.847 
 g = 9.81
 
-T_vector = np.vstack(m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2)) # to use for thrust at gate
+T_vector = m* np.vstack( np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2)) # to use for thrust at gate
 T_mag = m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2) # to check feasibility
 #print(T_vector)
 print('Thrust Mag: ', T_mag)
@@ -328,19 +335,19 @@ ax.quiver(
     ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
     length=0.2, normalize=True, color='r', label='acceleration vectors')
 # Gate
-gate_origin = np.array([0, 0, 1.75])  # Define gate origin explicitly
-ax.plot([0], [0], [1.75], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
+gate_origin = np.array([0, 1, 1.75])  # Define gate origin explicitly
+ax.plot([0], [1], [1.75], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 gate = np.array([
-            [0, -0.5, -0.25],
-            [0,  0.5, -0.25],
-            [0,  0.5,  0.25],
-            [0, -0.5,  0.25],
-            [0, -0.5, -0.25]  
+            [0, -0.25, -0.1905], # bottom left
+            [0,  0.25, -0.1905], # bottom right
+            [0,  0.25,  0.1905], # top right
+            [0, -0.25,  0.1905], # top left
+            [0, -0.25, -0.1905]  # close
         ])
 
 
 # 45-degree rotation about Y-axis for gate
-theta = np.radians(135)
+theta = np.radians(-45)
 ty = np.array([
             [1, 0, 0],
             [0, np.cos(theta), np.sin(theta)           ],
@@ -349,44 +356,47 @@ ty = np.array([
 
 
 # Rotate and translate gate to origin at (0,0,1)
-gate_pts = gate @ ty.T + np.array([0, 0, 1.75])
-gate_normal = np.array([0, 0, -1.75]) @ ty.T
-gate_normal = gate_normal / np.linalg.norm(gate_normal)
+initial_normal = np.array([0, 0, 1])  # Normal 
+gate_pts = gate @ ty.T + np.array([0, 1, 1.75])
+#gate_normal = np.array([0, 0.5, 1.75]) @ ty.T
+gate_normal = ty @ initial_normal  # Rotate the normal, not the origin
+#gate_normal1 /=  np.linalg.norm(gate_normal)
+
 ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
 ax.quiver(
-    0, 0, 1.75,                    
+    0, 1, 1.75,                    
     gate_normal[0], gate_normal[1], gate_normal[2],  # Components
+
     length=0.5, color='purple', linewidth=2, label='Gate Normal'
-)
-# thrust vector at gate
-ax.quiver(
-    0, 0, 1.75,  
-    T_vector[0], T_vector[1], T_vector[2],
-    length=0.1, color='orange', linewidth=2, label='Thrust at Gate'
 )
 
 
 # to check if thrust vector and gate normal align 
 # to double check thrust vector aligns with normal gate 
-t_gate = tf  # time when drone is at the gate
+t_gate = tf  # for calculating time when drone is at the gate
 gate_idx = np.argmin(np.abs(time_full - t_gate))
-a_gate =  np.array([
+a_gate =  m* np.array([
     ax_traj[gate_idx],
     ay_traj[gate_idx],
     az_traj[gate_idx] + g  
 ])
-thrust_vector_at_gate = np.array([ax_traj[0], ay_traj[0], az_traj[1] + g])  # Get thrust at the first point (assumed to be near the gate)
-normalized_thrust_vector = thrust_vector_at_gate / np.linalg.norm(thrust_vector_at_gate)
+thrust_unit = a_gate / np.linalg.norm(a_gate)
+#thrust_vector_at_gate = np.array([ax_traj[gate_idx], ay_traj[gate_idx], az_traj[gate_idx] + g])  # Get thrust at the first point (assumed to be near the gate)
 T_mag_gate = np.linalg.norm(a_gate)
+# thrust vector at gate
+ax.quiver(
+    0, 1, 1.75,  
+    thrust_unit[0], thrust_unit[1], thrust_unit[2],
+    length=0.75, color='orange', linewidth=2, label='Thrust at Gate'
+)
+# check alignment <10 degrees is good
+angle_rad = np.arccos(np.clip(np.dot(thrust_unit, gate_normal) /
+                              (np.linalg.norm(thrust_unit) * np.linalg.norm(gate_normal)), -1, 1))
+angle_deg = np.degrees(angle_rad)
+print(f"Angle between gate normal and thrust vector: {angle_deg:.2f}°, good if < 10°")
 
-print(thrust_vector_at_gate)
-print(f"Normalized Thrust Vector at Gate: {normalized_thrust_vector}")
+#print(f"thrust vector at gate: {thrust_vector_at_gate}")
 print(f"Normalized Gate Normal: {gate_normal}")
-
-# WIPCalculate the angle between the two normalized vectors, 0-10 degrees is good alignment
-
-# to check the individual motor speeds
-
 ax.set_xlim([-2, 2])
 ax.set_ylim([-2, 2])
 ax.set_zlim([0, 4]) 
