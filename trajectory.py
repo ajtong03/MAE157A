@@ -6,8 +6,8 @@ from dynamics import dynamics   # import the class, not the module
 import matplotlib.animation as animation
 from scipy.spatial.transform import Rotation as R
 from PositionController import PositionController
-# 1m in y -dir, y acc = -9.4, 2.31°
-
+# 1m in y -dir, y acc = -8.25, 4.94°
+#45° gate
 
 # during OH with the prof, the prof recommend having a neg accel in y-dir (but no velocity in y-dir) 
 # and velocity in x-direction (but no accel in x-dir)
@@ -35,10 +35,10 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # Approach Segment 
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
 # x - axis
-tf = 3 # seconds
+tf = 2.7 # seconds
 time_approach = np.linspace(0, tf, 200)
 
-c_x = solve_polynomial_coefficients(tf, 1.5, 0, 0, 0, 0, 2.05, 0,0)
+c_x = solve_polynomial_coefficients(tf, -1.25, 0, 0, 0, 0, -1, 0,0)
 # acceleration must be zero (so it doesnt move forward or backwards going through gate)
 print("x-coeffs:", c_x)
 def x_t(t):
@@ -53,7 +53,7 @@ def jx_t(t):
 # y - dir
 # focus on y accel (make sure orientation lines up)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
-c_y = solve_polynomial_coefficients(tf,-0.5, 0, 0, 0, 1, 0, -9.40, 0)
+c_y = solve_polynomial_coefficients(tf,1, 0, 0, 0, -1, 0, 8.25, 0)
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
@@ -66,7 +66,7 @@ def jy_t(t):
 
 # z - dir 
 # accel how fast v_z is accelerating up/down
-c_z = solve_polynomial_coefficients(tf, 0, 0, 0, 0, 1.75, 0, 0, 0 )
+c_z = solve_polynomial_coefficients(tf, 0.6, 0, 0, 0, 1.75, 0, 0, 0 )
 print("z-coeffs:", c_z)
 # needs to counteract gravity in this case
 def z_t(t):
@@ -103,11 +103,11 @@ def traj_State(t):
 
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
-tf1 =  2.95 # seconds
+tf1 =  3 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, 2.05, 0, 0, 1.25, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, -1, 0, 0, -1, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -120,7 +120,7 @@ def jx_t1(t):
     return 6 * c_x1[3] + 24 * c_x1[4] * t + 60 * c_x1[5] * t**2 + 120 * c_x1[6] * t**3 + 210 * c_x1[7] * t**4
 
 # y - dir
-c_y1 = solve_polynomial_coefficients(tf1, 1 , 0, -9.4, 0, 1, 0, 0, 0 )
+c_y1 = solve_polynomial_coefficients(tf1, -1 , 0, 8.25, 0, -1, 0, 0, 0 )
 print("y-coeffs:", c_y1)
 def y_t1(t):
     return c_y1[0] + c_y1[1] * t + c_y1[2] * t**2 + c_y1[3] * t**3 + c_y1[4] * t**4 + c_y1[5] * t**5 + c_y1[6] * t**6 + c_y1[7] * t**7
@@ -135,7 +135,7 @@ def jy_t1(t):
 
 # z - dir 
 #during testing change z-altitude based on how it lands
-c_z1 = solve_polynomial_coefficients(tf1, 1.75, 0, 0, 0, 0.09, 0, 0, 0)
+c_z1 = solve_polynomial_coefficients(tf1, 1.75, 0, 0, 0, 0.6, 0, 0, 0)
 print("z-coeffs:", c_z1)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 # needs to counteract gravity in this case 
@@ -190,27 +190,6 @@ def traj_State(t):
 
     return state
 
-
-# Separately plot polynomials (best to see distance it covers)
-# change as necessary
-'''
-plt.figure(figsize=(8, 6))
-plt.plot(time_approach, [x_t(t) for t in time_approach], label="xPosition")
-#plt.plot(time_approach, [x_t1(t) for t in time_departure], label="xPosition")
-#plt.plot(time_approach, [y_t1(t) for t in time_departure], label="yPosition")
-
-plt.plot(time_approach, [y_t(t) for t in time_approach], label="yPosition")
-plt.plot(time_approach, [z_t(t) for t in time_approach], label="zPosition")
-
-#plt.plot(time_values, [ax_t(t) for t in time_departure], label="Acceleration")
-#plt.plot(time_values, [jx_t(t) for t in time_departure], label = "Jerk")
-plt.title("X-Direction Trajectory (departure segment)")
-plt.xlabel("Time (s)")
-plt.ylabel("Value")
-plt.legend()
-plt.grid(True)
-plt.show()
-'''
 # Generate trajectory data for both segments
 x_traj_approach = [x_t(t) for t in time_approach]
 y_traj_approach = [y_t(t) for t in time_approach]
@@ -259,21 +238,50 @@ traj = np.column_stack((time_full,
                         vx_traj, vy_traj, vz_traj,
                         ax_traj, ay_traj, az_traj,
                         jx_traj, jy_traj, jz_traj))
+# Separately plot polynomials (best to see distance it covers)
+# change as necessary
+# position
+plt.plot(time_full, x_traj, label="xPosition")
+plt.plot(time_full, y_traj, label="yPosition")
+plt.plot(time_full, z_traj, label="ZPos")
+plt.tight_layout()
+plt.xlabel('time')
+plt.ylabel("distance")
+plt.title("distance covered")
+plt.legend()
+
+
+# velocity 
+plt.figure(figsize=(8, 6))
+plt.plot(time_full, vx_traj, label="xvel")
+plt.plot(time_full, vy_traj, label="yvel")
+plt.plot(time_full, vz_traj, label="zvel")
+
+#plt.plot(time_values, [jx_t(t) for t in time_departure], label = "Jerk")
+plt.title("X-Direction Trajectory (app segment)")
+plt.xlabel("Time (s)")
+plt.ylabel("Vel")
+plt.title("Velocity vs. Time")
+plt.tight_layout()
+plt.legend()
+plt.grid(True)
+
 
 # acceleration of the full trajectory
-'''
+
 plt.figure(figsize=(10, 6))
-plt.plot(time_full, ax_traj, label='a_x (m/s²)')
-plt.plot(time_full, ay_traj, label='a_y (m/s²)')
-plt.plot(time_full, az_traj, label='a_z (m/s²)')
+plt.plot(time_full, ax_traj, label='ax (m/s²)')
+plt.plot(time_full, ay_traj, label='ay (m/s²)')
+plt.plot(time_full, az_traj, label='az (m/s²)')
 
 plt.xlabel('t')
 plt.ylabel('accel')
+plt.title("Acceleration vs. Time")
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
-plt.show()
-'''
+
+
 
 # print(traj)
 v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
@@ -285,6 +293,7 @@ g = 9.81
 
 T_vector = m* np.vstack( np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2)) # to use for thrust at gate
 T_mag = m* np.sqrt(ax_traj**2 + ay_traj**2 + (az_traj+g)**2) # to check feasibility
+#a_yd = 
 #print(T_vector)
 print('Thrust Mag: ', T_mag)
 
@@ -335,8 +344,7 @@ ax.quiver(
     ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
     length=0.2, normalize=True, color='r', label='acceleration vectors')
 # Gate
-gate_origin = np.array([0, 1, 1.75])  # Define gate origin explicitly
-ax.plot([0], [1], [1.75], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
+ax.plot([0], [-1], [1.75], 'ro', markersize=5, label='Gate Origin')  
 gate = np.array([
             [0, -0.25, -0.1905], # bottom left
             [0,  0.25, -0.1905], # bottom right
@@ -347,7 +355,7 @@ gate = np.array([
 
 
 # 45-degree rotation about Y-axis for gate
-theta = np.radians(-45)
+theta = np.radians(45) # (-) --> CCW (+) --> CW
 ty = np.array([
             [1, 0, 0],
             [0, np.cos(theta), np.sin(theta)           ],
@@ -357,21 +365,16 @@ ty = np.array([
 
 # Rotate and translate gate to origin at (0,0,1)
 initial_normal = np.array([0, 0, 1])  # Normal 
-gate_pts = gate @ ty.T + np.array([0, 1, 1.75])
-#gate_normal = np.array([0, 0.5, 1.75]) @ ty.T
+gate_pts = gate @ ty.T + np.array([0, -1, 1.75])
 gate_normal = ty @ initial_normal  # Rotate the normal, not the origin
-#gate_normal1 /=  np.linalg.norm(gate_normal)
-
 ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
 ax.quiver(
-    0, 1, 1.75,                    
+    0, -1, 1.75,                    
     gate_normal[0], gate_normal[1], gate_normal[2],  # Components
 
     length=0.5, color='purple', linewidth=2, label='Gate Normal'
 )
 
-
-# to check if thrust vector and gate normal align 
 # to double check thrust vector aligns with normal gate 
 t_gate = tf  # for calculating time when drone is at the gate
 gate_idx = np.argmin(np.abs(time_full - t_gate))
@@ -381,11 +384,10 @@ a_gate =  m* np.array([
     az_traj[gate_idx] + g  
 ])
 thrust_unit = a_gate / np.linalg.norm(a_gate)
-#thrust_vector_at_gate = np.array([ax_traj[gate_idx], ay_traj[gate_idx], az_traj[gate_idx] + g])  # Get thrust at the first point (assumed to be near the gate)
 T_mag_gate = np.linalg.norm(a_gate)
 # thrust vector at gate
 ax.quiver(
-    0, 1, 1.75,  
+    0, -1, 1.75,  
     thrust_unit[0], thrust_unit[1], thrust_unit[2],
     length=0.75, color='orange', linewidth=2, label='Thrust at Gate'
 )

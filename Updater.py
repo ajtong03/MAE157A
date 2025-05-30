@@ -26,7 +26,7 @@ class Updater:
         self.ax.set_zlabel('Z (m)')
         self.ax.set_title('3D Drone Trajectory through Gate')
         self.ax.grid(True)
-        self.ax.plot([0], [1], [1.75], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
+        self.ax.plot([0], [-1], [1.75], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 
         gate = np.array([
             [0, -0.25, -0.1905],
@@ -37,23 +37,23 @@ class Updater:
         ])
 
         # 45-degree rotation about Y-axis for gate
-        theta = np.radians(-45)
+        theta = np.radians(45)
         ty = np.array([
             [1, 0, 0],
-            [0, np.cos(theta), np.sin(theta)           ],
+            [0, np.cos(theta), np.sin(theta) ],
             [0, -np.sin(theta), np.cos(theta)]
         ])
 
         # Rotate and translate gate to origin at (0,0,1)
         initial_normal = np.array([0, 0, 1])  # Normal 
-        gate_pts = gate @ ty.T + np.array([0, 1, 1.75])
+        gate_pts = gate @ ty.T + np.array([0, -1, 1.75])
         #gate_normal = np.array([0, 0.5, 1.75]) @ ty.T
         gate_normal = ty @ initial_normal  # Rotate the normal, not the origin
         gate_normal = gate_normal / np.linalg.norm(gate_normal)
         
         self.ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
         self.ax.quiver(
-            0, 1, 1.75,                    
+            0, -1, 1.75,                    
             gate_normal[0], gate_normal[1], gate_normal[2],  # Components
             length=0.5, color='purple', linewidth=2, label='Gate Normal'
         )

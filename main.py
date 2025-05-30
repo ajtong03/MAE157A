@@ -170,5 +170,5 @@ def animate(i):
         return []
 
 sim.updateDrone(states[0], dyn)
-ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt, blit=False, repeat = False)
+ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt/100, blit=False, repeat = False)
 plt.show()
