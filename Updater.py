@@ -58,7 +58,7 @@ class Updater:
             length=0.5, color='purple', linewidth=2, label='Gate Normal'
         )
         self.ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
-        self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], '--', color = 'w', lw= 0.75, label = 'trajectory path')
+        self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], '--', color = 'r', lw= 0.75, label = 'trajectory path')
         self.ax.legend(facecolor = 'lightgrey')
 
         

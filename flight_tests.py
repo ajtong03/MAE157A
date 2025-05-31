@@ -75,59 +75,6 @@ motor_forces = []
 time = []
 
 #######################################################################################
-# ---------------------------------- Simulation loop ----------------------------------
-####################################################################################### 
-t = 0.0
-runningSim = False
-while runningSim:
-    # Get new desired state from trajectory planner
-    xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = trajectory.traj_State(t)
-
-    time.append(t)
-    a_d = np.array([ax_d, ay_d, az_d])
-    j_d = np.array([jx_d, jy_d, jz_d])
-
-    target_state = np.zeros(13)
-    target_state[0:3] = np.array([xd, yd, zd])
-    target_state[3:6] = np.array([vx_d, vy_d, vz_d])
-
-    q_d, w_d, thrust, a = pos.posController(state_cur, target_state, a_d, j_d)
-    #print('pos', target_state[0:3])
-    #print('desired: ', q_d)
-    thrust_profile.append(thrust.copy())
-
-    target_state[6:10] = q_d
-    target_state[10:13] = w_d
-
-    torque = att.attController(state_cur, target_state)
-    f = att.getForces(torque, thrust)
-    motor_forces.append(f.copy())
-    state_cur = dyn.propagate(state_cur, f)
-
-    states.append(state_cur.copy())
-    # If z to low then indicate crash and end simulation
-    # t > 2 set arbitrarily so it doesn't "CRASH" at the start
-    '''
-    if state_cur[2] < 0.1:
-        if t > 2:
-            print("CRASH!!!")
-            break
-    '''
-    
-    t += dt
-    if t >= tf:
-        # break if the end of the trajectory has been reached
-        runningSim = False
-        print('End of trajectory reached')
-        break
-    
-
-    # Update data array (this can probably be done in a much cleaner way...)
-    tmp = np.append(t,state_cur)
-    tmp = np.append(tmp,f)
-    data = np.vstack((data,tmp))
-
-#######################################################################################
 # ------------------------------------ Actual Data ------------------------------------
 ####################################################################################### 
 inner = pd.read_csv('Day 1/test1_inner_loop.csv')
@@ -176,6 +123,14 @@ vx = outer['vx'].to_numpy()[750:]
 vy = outer['vy'].to_numpy()[750:]
 vz = outer['vz'].to_numpy()[750:]
 
+## account for position offsets
+x_off = -1.25 - x[0]
+x = x + x_off
+y_off = 1 - y[0]
+y = y + y_off
+z_off = 0.15 - z[0]
+z = z - z_off
+
 states = np.zeros((len(x), 13))
 states[:, 0] = x
 states[:, 1] = y
@@ -201,7 +156,7 @@ if save_data:
     file_name = f"data_{date_time_string}.csv"
     np.savetxt("../data/"+file_name, data, delimiter=",")
 
-
+'''
 # Plot velocity, thrust, and motor forces profiles
 states = np.array(states)
 thrust_profile = np.array(thrust_profile)
@@ -227,7 +182,7 @@ plt.plot(time, motor_forces[:, 2], label = 'motor 3')
 plt.plot(time, motor_forces[:, 3], label = 'motor 4')
 plt.title('Motor Forces Profile')
 plt.legend()
-
+'''
 # --- run animation ------------------------------------------------
 sim.initializePlot()
 anim_fig = sim.fig
@@ -238,6 +193,7 @@ def animate(i):
         return tail_artists + drone_artists
     else:
         return []
+
 
 sim.updateDrone(states[0], dyn)
 ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt/100, blit=False, repeat = False)
