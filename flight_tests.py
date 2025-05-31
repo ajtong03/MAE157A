@@ -32,8 +32,7 @@ tf = trajectory.total_time #10.
 # print(tf)
 
 # Simulation rate
-rate = 500
-dt = 1./rate
+dt = 1/100
 
 # Gravity
 g = 9.8
@@ -47,26 +46,6 @@ att = AttitudeController(params, dt)
 # Initialize data array that contains useful info (probably should add more)
 # CONFIGURE THIS
 
-
-# initialise trajectory
-traj_start = trajectory.traj_State(0)
-# print(traj, 'end')
-p_start = traj_start[0:3]
-#print('start', p_start)
-v_start = traj_start[3:6]
-q_start = [1.0, 0., 0., 0.]
-w_start = [0., 0., 0.] # in radians
-
-# initialise starting state
-f = np.zeros(4)
-state_cur = np.array(list(p_start) + list(v_start) + q_start + w_start)
-
-# Initialize data array that contains useful info (probably should add more)
-# CONFIGURE THIS
-data = np.append(t,state_cur)
-data = np.append(data,f)
-
-
 # initilize 3D plot
 sim = Updater()
 states = []
@@ -74,11 +53,17 @@ thrust_profile = []
 motor_forces = []
 time = []
 
+
 #######################################################################################
 # ------------------------------------ Actual Data ------------------------------------
 ####################################################################################### 
 inner = pd.read_csv('Day 1/test1_inner_loop.csv')
 outer = pd.read_csv('Day 1/test1_outer_loop.csv')
+
+inner = inner.iloc[708:1000]
+outer = outer.iloc[1427:2065]
+#print('inner ', inner)
+#print('outer', outer)
 
 inner['int_time'] = (inner['t'] * 1000).astype('int64')
 outer['int_time'] = (outer['t'] * 1000).astype('int64')
@@ -101,7 +86,10 @@ outer_interp = outer.reindex(interp_time).interpolate(method='index', limit_dire
 print(outer_interp)
 print(inner_interp)
 
+inner = inner_interp
+outer = outer_interp
 
+time = (interp_time - start) / 1000
 qw = inner['qw'].to_numpy()
 qx = inner['qx'].to_numpy()
 qy = inner['qy'].to_numpy()
@@ -111,25 +99,21 @@ wx = inner['wx'].to_numpy()
 wy = inner['wy'].to_numpy()
 wz = inner['wz'].to_numpy()
 
-t_o = outer['t'].to_numpy()
-t_o = t_o[750:]
-#print('time:',  t_o[0], ', ', t_o[len(t_o) - 1])
-t_o = t_o - t_o[0]
-x = outer['x'].to_numpy()[750:]
-y= outer['y'].to_numpy()[750:]
-z = outer['z'].to_numpy()[750:]
+x = outer['x'].to_numpy()
+y= outer['y'].to_numpy()
+z = outer['z'].to_numpy()
 
-vx = outer['vx'].to_numpy()[750:]
-vy = outer['vy'].to_numpy()[750:]
-vz = outer['vz'].to_numpy()[750:]
+vx = outer['vx'].to_numpy()
+vy = outer['vy'].to_numpy()
+vz = outer['vz'].to_numpy()
 
 ## account for position offsets
 x_off = -1.25 - x[0]
 x = x + x_off
 y_off = 1 - y[0]
 y = y + y_off
-z_off = 0.15 - z[0]
-z = z - z_off
+z_off = 0.6 - z[0]
+z = z + z_off
 
 states = np.zeros((len(x), 13))
 states[:, 0] = x
@@ -138,24 +122,55 @@ states[:, 2] = z
 states[:, 3] = vx
 states[:, 4] = vy
 states[:, 5] = vz
-states[:, 6] = 1
-states[:, 7] = 0
-states[:, 8] = 0
-states[:, 9] = 0
+states[:, 6] = qw
+states[:, 7] = qx
+states[:, 8] = qy
+states[:, 9] = qz
 #print (inner)
 #print(outer)
 #test_fig = plt.figure(5)
 #plt.plot(t_o, x)
 
+#######################################################################################
+# -------------------------------------- Desired --------------------------------------
+####################################################################################### 
+# initialise trajectory
+traj_start = trajectory.traj_State(0)
+# print(traj, 'end')
+p_start = traj_start[0:3]
+#print('start', p_start)
+v_start = traj_start[3:6]
+q_start = [1.0, 0., 0., 0.]
+w_start = [0., 0., 0.] # in radians
 
+# initialise starting state
+f = np.zeros(4)
+state_cur = np.array(list(p_start) + list(v_start) + q_start + w_start)
+des_states = []
+for t in time:    # Get new desired state from trajectory planner
+    xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = trajectory.traj_State(t)
 
-# If save_data flag is true then save data
-if save_data:
-    now = datetime.datetime.now()
-    date_time_string = now.strftime("%Y-%m-%d_%H-%M-%S")
-    file_name = f"data_{date_time_string}.csv"
-    np.savetxt("../data/"+file_name, data, delimiter=",")
+    a_d = np.array([ax_d, ay_d, az_d])
+    j_d = np.array([jx_d, jy_d, jz_d])
 
+    target_state = np.zeros(13)
+    target_state[0:3] = np.array([xd, yd, zd])
+    target_state[3:6] = np.array([vx_d, vy_d, vz_d])
+
+    q_d, w_d, thrust, a = pos.posController(state_cur, target_state, a_d, j_d)
+    
+    target_state[6:10] = q_d
+    target_state[10:13] = w_d
+
+    torque = att.attController(state_cur, target_state)
+    f = att.getForces(torque, thrust)
+    state_cur = dyn.propagate(state_cur, f)
+
+    des_states.append(state_cur.copy())
+    
+    t += dt
+
+des_states = np.array(des_states)
 '''
 # Plot velocity, thrust, and motor forces profiles
 states = np.array(states)
@@ -183,6 +198,16 @@ plt.plot(time, motor_forces[:, 3], label = 'motor 4')
 plt.title('Motor Forces Profile')
 plt.legend()
 '''
+pos = plt.figure(2)
+plt.plot(time, x, label = 'actual x')
+plt.plot(time, y, label = 'actual y')
+plt.plot(time, z, label = 'actual z')
+plt.plot(time, des_states[:, 0], label = 'desired x')
+plt.plot(time, des_states[:, 1], label = 'desired y')
+plt.plot(time, des_states[:, 2], label = 'desired z')
+plt.title('Position Profile')
+plt.legend()
+
 # --- run animation ------------------------------------------------
 sim.initializePlot()
 anim_fig = sim.fig
