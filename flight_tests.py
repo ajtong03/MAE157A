@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+from scipy.signal import savgol_filter
 import matplotlib.animation as animation
 import datetime
 import pandas as pd
@@ -43,8 +44,6 @@ dyn = dynamics(params, dt)
 pos = PositionController(params, dt)
 att = AttitudeController(params, dt)
 
-# Initialize data array that contains useful info (probably should add more)
-# CONFIGURE THIS
 
 # initilize 3D plot
 sim = Updater()
@@ -55,15 +54,23 @@ time = []
 
 
 #######################################################################################
-# ------------------------------------ Actual Data ------------------------------------
+# ------------------------------------ Actual Data ---------------------------------- #
 ####################################################################################### 
-inner = pd.read_csv('Day 1/test1_inner_loop.csv')
-outer = pd.read_csv('Day 1/test1_outer_loop.csv')
+inner = pd.read_csv('Day 1/test2_inner_loop.csv')
+outer = pd.read_csv('Day 1/test2_outer_loop.csv')
 
-inner = inner.iloc[708:1000]
-outer = outer.iloc[1427:2065]
-#print('inner ', inner)
-#print('outer', outer)
+# test 1
+#inner = inner.iloc[713:990]
+#outer = outer.iloc[1437:2065]
+
+# test 2
+outer = outer.iloc[2401:3474]
+inner = inner.iloc[1196:1732]
+
+# test 3
+#outer = outer.iloc[2350:3100]
+#inner = inner.iloc[1180:1520]
+
 
 inner['int_time'] = (inner['t'] * 1000).astype('int64')
 outer['int_time'] = (outer['t'] * 1000).astype('int64')
@@ -73,9 +80,9 @@ outer = outer.set_index('int_time')
 
 start = max(inner.index.min(), outer.index.min())
 end = min(inner.index.max(), outer.index.max())
-#print('first: ', outer.index.min(), ' last: ', outer.index.max())
 #print('start: ', start, ' end: ', end)
-#print('inner: ', inner.index.min(), ' last: ', inner.index.max())
+#print('outer: ', outer.index.min(), ' to ', outer.index.max())
+#print('inner: ', inner.index.min(), ' to ', inner.index.max())
 step = 10  # ms
 
 interp_time = np.arange(start, end, step)
@@ -83,13 +90,18 @@ interp_time = np.arange(start, end, step)
 inner_interp = inner.reindex(interp_time).interpolate(method='index', limit_direction = 'both').reset_index()
 outer_interp = outer.reindex(interp_time).interpolate(method='index', limit_direction = 'both').reset_index()
 
-print(outer_interp)
+##print(outer_interp)
 print(inner_interp)
 
-inner = inner_interp
-outer = outer_interp
+#inner = inner_interp
+#outer = outer_interp
 
+time_o = outer['t'].to_numpy()
+time_o = time_o - time_o[0]
+time_i = inner['t'].to_numpy()
+time_i = time_i - time_i[0]
 time = (interp_time - start) / 1000
+
 qw = inner['qw'].to_numpy()
 qx = inner['qx'].to_numpy()
 qy = inner['qy'].to_numpy()
@@ -104,110 +116,88 @@ y= outer['y'].to_numpy()
 z = outer['z'].to_numpy()
 
 vx = outer['vx'].to_numpy()
+vx = savgol_filter(vx, 11, 7)
 vy = outer['vy'].to_numpy()
+vy = savgol_filter(vy, 11, 7)
 vz = outer['vz'].to_numpy()
+vz = savgol_filter(vz, 11, 7)
 
 ## account for position offsets
 x_off = -1.25 - x[0]
-x = x + x_off
+#x = x + x_off
 y_off = 1 - y[0]
-y = y + y_off
-z_off = 0.6 - z[0]
-z = z + z_off
+#y = y + y_off
+z_off = 0.9 - z[0]
+#z = z + z_off
 
+plt.figure(7)
+plt.plot(outer['t'] - 1748539680.5542300, x)
+plt.show()
 states = np.zeros((len(x), 13))
-states[:, 0] = x
 states[:, 1] = y
+states[:, 0] = x
 states[:, 2] = z
 states[:, 3] = vx
 states[:, 4] = vy
 states[:, 5] = vz
-states[:, 6] = qw
-states[:, 7] = qx
-states[:, 8] = qy
-states[:, 9] = qz
+#states[:, 6] = qw
+#states[:, 7] = qx
+#states[:, 8] = qy
+#states[:, 9] = qz
 #print (inner)
 #print(outer)
 #test_fig = plt.figure(5)
 #plt.plot(t_o, x)
 
-#######################################################################################
-# -------------------------------------- Desired --------------------------------------
-####################################################################################### 
-# initialise trajectory
-traj_start = trajectory.traj_State(0)
-# print(traj, 'end')
-p_start = traj_start[0:3]
-#print('start', p_start)
-v_start = traj_start[3:6]
-q_start = [1.0, 0., 0., 0.]
-w_start = [0., 0., 0.] # in radians
+des_states = np.zeros((len(x), 13))
+des_states[:, 0] = outer['xd'].to_numpy()
+des_states[:, 1] = outer['yd'].to_numpy()
+des_states[:, 2] = outer['zd'].to_numpy()
+des_states[:, 3] = outer['vxd'].to_numpy()
+des_states[:, 4] = outer['vyd'].to_numpy()
+des_states[:, 5] = outer['vzd'].to_numpy()
+#des_states[:, 6] = inner['qwd'].to_numpy()
+#des_states[:, 7] = inner['qxd'].to_numpy()
+#des_states[:, 8] = inner['qyd'].to_numpy()
+#des_states[:, 9] = inner['qzd'].to_numpy()
 
-# initialise starting state
-f = np.zeros(4)
-state_cur = np.array(list(p_start) + list(v_start) + q_start + w_start)
-des_states = []
-for t in time:    # Get new desired state from trajectory planner
-    xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = trajectory.traj_State(t)
 
-    a_d = np.array([ax_d, ay_d, az_d])
-    j_d = np.array([jx_d, jy_d, jz_d])
 
-    target_state = np.zeros(13)
-    target_state[0:3] = np.array([xd, yd, zd])
-    target_state[3:6] = np.array([vx_d, vy_d, vz_d])
 
-    q_d, w_d, thrust, a = pos.posController(state_cur, target_state, a_d, j_d)
-    
-    target_state[6:10] = q_d
-    target_state[10:13] = w_d
 
-    torque = att.attController(state_cur, target_state)
-    f = att.getForces(torque, thrust)
-    state_cur = dyn.propagate(state_cur, f)
+pos1 = plt.figure(2)
+plt.plot(time_o, x, label = 'actual x')
+plt.plot(time_o, y, label = 'actual y')
+plt.plot(time_o, z, label = 'actual z')
+plt.plot(time_o, des_states[:, 0], label = 'desired x')
+plt.plot(time_o, des_states[:, 1], label = 'desired y')
+plt.plot(time_o, des_states[:, 2], label = 'desired z')
+plt.title('Test 2 Position Profile')
+plt.legend(bbox_to_anchor = (1, 1))
 
-    des_states.append(state_cur.copy())
-    
-    t += dt
+vel1 = plt.figure(3)
+plt.plot(time_o, vx, label = 'actual vx')
+plt.plot(time_o, vy, label = 'actual vy')
+plt.plot(time_o, vz, label = 'actual vy')
+plt.plot(time_o, des_states[:, 3], label = 'desired vx')
+plt.plot(time_o, des_states[:, 4], label = 'desired vy')
+plt.plot(time_o, des_states[:, 5], label = 'desired vz')
+plt.title('Test 3 Velocity Profile')
+plt.legend(bbox_to_anchor = (1, 1))
 
-des_states = np.array(des_states)
 '''
-# Plot velocity, thrust, and motor forces profiles
-states = np.array(states)
-thrust_profile = np.array(thrust_profile)
-motor_forces = np.array(motor_forces)
-
-vel_fig = plt.figure(2)
-time = np.array(time)
-plt.plot(time, states[:, 3], label = 'x velocity')
-plt.plot(time, states[:, 4], label = 'y velocity')
-plt.plot(time, states[:, 5], label = 'z velocity')
-plt.title('Velocity Profile')
-plt.legend()
-
-thrust_fig = plt.figure(3)
-plt.plot(time, thrust_profile, label = 'thrust magnitude')
-plt.title('Thrust Profile')
-plt.legend()
-
-motor_fig = plt.figure(4)
-plt.plot(time, motor_forces[:, 0], label = 'motor 1')
-plt.plot(time, motor_forces[:, 1], label = 'motor 2')
-plt.plot(time, motor_forces[:, 2], label = 'motor 3')
-plt.plot(time, motor_forces[:, 3], label = 'motor 4')
-plt.title('Motor Forces Profile')
-plt.legend()
+att1 = plt.figure(4)
+plt.plot(time_i, qw, label = 'actual qw')
+plt.plot(time_i, qx, label = 'actual qx')
+plt.plot(time_i, qy, label = 'actual qy')
+plt.plot(time_i, qz, label = 'actual qz')
+plt.plot(time_i, des_states[:, 6], label = 'desired qw')
+plt.plot(time_i, des_states[:, 7], label = 'desired qx')
+plt.plot(time_i, des_states[:, 8], label = 'desired qy')
+plt.plot(time_i, des_states[:, 9], label = 'desired qz')
+plt.title('Test 3 Orientation Profile')
+plt.legend(bbox_to_anchor = (1, 1))
 '''
-pos = plt.figure(2)
-plt.plot(time, x, label = 'actual x')
-plt.plot(time, y, label = 'actual y')
-plt.plot(time, z, label = 'actual z')
-plt.plot(time, des_states[:, 0], label = 'desired x')
-plt.plot(time, des_states[:, 1], label = 'desired y')
-plt.plot(time, des_states[:, 2], label = 'desired z')
-plt.title('Position Profile')
-plt.legend()
-
 # --- run animation ------------------------------------------------
 sim.initializePlot()
 anim_fig = sim.fig
