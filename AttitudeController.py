@@ -31,7 +31,7 @@ class AttitudeController:
         # these gains are set after testing different gain values to see which converge the best 
         self.Kp = np.diag([5.5, 5.5, 4.96])
         self.Kd = np.diag([.13, .146, .25])
-        self.lam = np.array([.05, .07, .05])
+        self.lam = np.array([0.15, 0.17, 0.15])
     
     #---------- ATTITUDE CONTROLLER GIVEN CURRENT AND TARGET STATES ----------#
     def attController(self, state, target_state):
