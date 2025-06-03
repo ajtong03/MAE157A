@@ -78,7 +78,7 @@ time = []
 # ---------------------------------- Simulation loop ----------------------------------
 ####################################################################################### 
 t = 0.0
-runningSim = False
+runningSim = True
 while runningSim:
     # Get new desired state from trajectory planner
     xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = trajectory.traj_State(t)
@@ -176,3 +176,4 @@ def animate(i):
 sim.updateDrone(states[0], dyn)
 ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt/100, blit=False, repeat = False)
 plt.show()
+

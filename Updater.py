@@ -24,7 +24,7 @@ class Updater:
         self.ax.set_xlabel('X (m)')
         self.ax.set_ylabel('Y (m)')
         self.ax.set_zlabel('Z (m)')
-        self.ax.set_title('3D Drone Trajectory through Gate')
+        self.ax.set_title('3D Drone Trajectory Throug Gate')
         self.ax.grid(True)
         self.ax.plot([0], [-1], [1.5], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 
@@ -55,10 +55,10 @@ class Updater:
         self.ax.quiver(
             0, -1, 1.5,                    
             gate_normal[0], gate_normal[1], gate_normal[2],  # Components
-            length=0.5, color='purple', linewidth=2, label='Gate Normal'
+            length=0.5, color='purple', linewidth=2, label='Expected Thrust Direction'
         )
         self.ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
-        self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], '--', color = 'r', lw= 0.75, label = 'trajectory path')
+        self.ax.plot(traj[:, 1], traj[:, 2], traj[:, 3], '--', color = 'r', lw= 0.75, label = 'Trajectory Path')
         self.ax.legend(facecolor = 'lightgrey')
 
         
