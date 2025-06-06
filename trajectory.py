@@ -38,7 +38,7 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 tf = 1.35 # seconds
 time_approach = np.linspace(0, tf, 200)
 
-c_x = solve_polynomial_coefficients(tf, -1.25, 0, 0, 0, 0, -3.2, 0,0)
+c_x = solve_polynomial_coefficients(tf, -1.25, 0, 0, 0, 0, -1, 0,0)
 # acceleration must be zero (so it doesnt move forward or backwards going through gate)
 print("x-coeffs:", c_x)
 def x_t(t):
@@ -53,7 +53,7 @@ def jx_t(t):
 # y - dir
 # focus on y accel (make sure orientation lines up)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
-c_y = solve_polynomial_coefficients(tf,0.5, 0, 0, 0, -1, 0, 22, 0)
+c_y = solve_polynomial_coefficients(tf,0.5, 0, 0, 0, 0, 0, 0, 0)
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
@@ -66,7 +66,7 @@ def jy_t(t):
 
 # z - dir 
 # accel how fast v_z is accelerating up/down
-c_z = solve_polynomial_coefficients(tf, 1.25, 0, 0, 0, 2.5, 1, 0, 0 )
+c_z = solve_polynomial_coefficients(tf, 1.25, 0, 0, 0, 2.5, -2, 4.6, 0 )
 print("z-coeffs:", c_z)
 # needs to counteract gravity in this case
 def z_t(t):
@@ -107,7 +107,7 @@ tf1 =  1.3 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, -3.2, 0, 0, -1, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, -1, 0, 0, 1, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -120,7 +120,7 @@ def jx_t1(t):
     return 6 * c_x1[3] + 24 * c_x1[4] * t + 60 * c_x1[5] * t**2 + 120 * c_x1[6] * t**3 + 210 * c_x1[7] * t**4
 
 # y - dir
-c_y1 = solve_polynomial_coefficients(tf1, -1 , 0, 22, 0, 0, 0, 0, 0 )
+c_y1 = solve_polynomial_coefficients(tf1, 0 , 0, 0, 0, -0.5, 0, 0, 0 )
 print("y-coeffs:", c_y1)
 def y_t1(t):
     return c_y1[0] + c_y1[1] * t + c_y1[2] * t**2 + c_y1[3] * t**3 + c_y1[4] * t**4 + c_y1[5] * t**5 + c_y1[6] * t**6 + c_y1[7] * t**7
@@ -135,7 +135,7 @@ def jy_t1(t):
 
 # z - dir 
 #during testing change z-altitude based on how it lands
-c_z1 = solve_polynomial_coefficients(tf1, 2.5, 1, 0, 0, 1.75, 0, 0, 0)
+c_z1 = solve_polynomial_coefficients(tf1, 2.5, -2, 4.6, 0, 2.2, 0, 0, 0)
 print("z-coeffs:", c_z1)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
 # needs to counteract gravity in this case 
@@ -344,32 +344,32 @@ ax.quiver(
     ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
     length=0.2, normalize=True, color='r', label='acceleration vectors')
 # Gate
-ax.plot([0], [-1], [2.5], 'ro', markersize=5, label='Gate Origin')  
+ax.plot([0], [0], [2.5], 'ro', markersize=5, label='Gate Origin')  
 gate = np.array([
-            [0, -0.25, -0.1905], # bottom left
-            [0,  0.25, -0.1905], # bottom right
-            [0,  0.25,  0.1905], # top right
-            [0, -0.25,  0.1905], # top left
-            [0, -0.25, -0.1905]  # close
+            [0, -0.1905, -0.25], # bottom left
+            [0,  0.1905, -0.25], # bottom right
+            [0,  0.1905,  0.25], # top right
+            [0, -0.1905,  0.25], # top left
+            [0, -0.1905, -0.25]  # close
         ])
 
 
 # 45-degree rotation about Y-axis for gate
-theta = np.radians(80) # (-) --> CCW (+) --> CW
+theta = np.radians(90) # (-) --> CCW (+) --> CW
 ty = np.array([
-            [1, 0, 0],
-            [0, np.cos(theta), np.sin(theta)           ],
-            [0, -np.sin(theta), np.cos(theta)]
+            [np.cos(theta), 0, -np.sin(theta)],
+            [0,           1,         0    ],
+            [np.sin(theta), 0, np.cos(theta)]
         ])
 
 
 # Rotate and translate gate to origin at (0,0,1)
-initial_normal = np.array([0, 0, 1])  # Normal 
-gate_pts = gate @ ty.T + np.array([0, -1, 2.5])
+initial_normal = np.array([0, 0, -1])  # Normal 
+gate_pts = gate @ ty.T + np.array([0, 0, 2.5])
 gate_normal = ty @ initial_normal  # Rotate the normal, not the origin
 ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
 ax.quiver(
-    0, -1, 2.5,                    
+    0, 0, 2.5,                    
     gate_normal[0], gate_normal[1], gate_normal[2],  # Components
 
     length=0.5, color='purple', linewidth=2, label='Gate Normal'
@@ -387,7 +387,7 @@ thrust_unit = a_gate / np.linalg.norm(a_gate)
 T_mag_gate = np.linalg.norm(a_gate)
 # thrust vector at gate
 ax.quiver(
-    0, -1, 2.5,  
+    0, 0, 2.5,  
     thrust_unit[0], thrust_unit[1], thrust_unit[2],
     length=0.75, color='orange', linewidth=2, label='Thrust at Gate'
 )

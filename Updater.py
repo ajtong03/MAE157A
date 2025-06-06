@@ -29,19 +29,19 @@ class Updater:
         self.ax.plot([0], [-1], [2.5], 'ro', markersize=5, label='Gate Origin')  # gate at (0,0,1)
 
         gate = np.array([
-            [0, -0.25, -0.1905],
-            [0,  0.25, -0.1905],
-            [0,  0.25,  0.1905],
-            [0, -0.25,  0.1905],
-            [0, -0.25, -0.1905]  
+            [0, -0.1905, -0.25],
+            [0,  0.1905, -0.25],
+            [0,  0.1905,  0.25],
+            [0, -0.1905,  0.25],
+            [0, -0.1905, -0.25]  
         ])
 
         # 45-degree rotation about Y-axis for gate
-        theta = np.radians(80)
+        theta = np.radians(90)
         ty = np.array([
-            [1, 0, 0],
-            [0, np.cos(theta), np.sin(theta) ],
-            [0, -np.sin(theta), np.cos(theta)]
+            [np.cos(theta), 0, -np.sin(theta)],
+            [0,           1,         0    ],
+            [np.sin(theta), 0, np.cos(theta)]
         ])
 
         # Rotate and translate gate to origin at (0,0,1)
