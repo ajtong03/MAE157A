@@ -35,10 +35,10 @@ def solve_polynomial_coefficients(t_f, p0, v0, a0, j0, pf, vf, af, jf):
 # Approach Segment 
 # Recommended to have 0 acceleration through the gate and thrust perpendicular to gate's side
 # x - axis
-tf = 2.7 # seconds
+tf = 1.6 # seconds
 time_approach = np.linspace(0, tf, 200)
 
-c_x = solve_polynomial_coefficients(tf, -1.25, 0, 0, 0, 0, -1, 0,0)
+c_x = solve_polynomial_coefficients(tf, -1.25, 0, 0, 0, 0, -3, 0,0)
 # acceleration must be zero (so it doesnt move forward or backwards going through gate)
 print("x-coeffs:", c_x)
 def x_t(t):
@@ -53,7 +53,7 @@ def jx_t(t):
 # y - dir
 # focus on y accel (make sure orientation lines up)
 # remember acceleration <==> orientation/thrust (yaw in z-dir rotates plane left and right)
-c_y = solve_polynomial_coefficients(tf,1, 0, 0, 0, -1, 0, 8.2, 0)
+c_y = solve_polynomial_coefficients(tf,0.5, 0, 0, 0, -1, 0, 18, 0)
 print("y-coeffs:", c_y)
 def y_t(t):
     return c_y[0] + c_y[1] * t + c_y[2] * t**2 + c_y[3] * t**3 + c_y[4] * t**4 + c_y[5] * t**5 + c_y[6] * t**6 + c_y[7] * t**7
@@ -103,11 +103,11 @@ def traj_State(t):
 
 # Departure Segment 
 # Initial Boundary Conditions must match final BCs from approach segment
-tf1 =  2.7 # seconds
+tf1 =  1.2 # seconds
 time_departure = np.linspace(0, tf1, 200)
 
 # x - axis
-c_x1 = solve_polynomial_coefficients(tf1, 0, -1, 0, 0, -1, 0, 0, 0 )
+c_x1 = solve_polynomial_coefficients(tf1, 0, -3, 0, 0, -1, 0, 0, 0 )
 #
 print("x-coeffs:", c_x1)
 def x_t1(t):
@@ -120,7 +120,7 @@ def jx_t1(t):
     return 6 * c_x1[3] + 24 * c_x1[4] * t + 60 * c_x1[5] * t**2 + 120 * c_x1[6] * t**3 + 210 * c_x1[7] * t**4
 
 # y - dir
-c_y1 = solve_polynomial_coefficients(tf1, -1 , 0, 8.2, 0, -1, 0, 0, 0 )
+c_y1 = solve_polynomial_coefficients(tf1, -1 , 0, 18, 0, -1.25, 0, 0, 0 )
 print("y-coeffs:", c_y1)
 def y_t1(t):
     return c_y1[0] + c_y1[1] * t + c_y1[2] * t**2 + c_y1[3] * t**3 + c_y1[4] * t**4 + c_y1[5] * t**5 + c_y1[6] * t**6 + c_y1[7] * t**7
@@ -241,7 +241,7 @@ traj = np.column_stack((time_full,
 # Separately plot polynomials (best to see distance it covers)
 # change as necessary
 # position
-'''
+
 plt.plot(time_full, x_traj, label="xPos")
 plt.plot(time_full, y_traj, label="yPos")
 plt.plot(time_full, z_traj, label="ZPos")
@@ -282,7 +282,6 @@ plt.grid(True)
 plt.legend()
 plt.tight_layout()
 
-'''
 
 # print(traj)
 v_mag = np.sqrt(vx_traj**2 + vy_traj**2 + vz_traj**2)
@@ -345,7 +344,7 @@ ax.quiver(
     ax_traj[::skip],ay_traj[::skip], az_traj[::skip],
     length=0.2, normalize=True, color='r', label='acceleration vectors')
 # Gate
-ax.plot([0], [-1], [1.75], 'ro', markersize=5, label='Gate Origin')  
+ax.plot([0], [-1], [1.5], 'ro', markersize=5, label='Gate Origin')  
 gate = np.array([
             [0, -0.25, -0.1905], # bottom left
             [0,  0.25, -0.1905], # bottom right
@@ -356,7 +355,7 @@ gate = np.array([
 
 
 # 45-degree rotation about Y-axis for gate
-theta = np.radians(45) # (-) --> CCW (+) --> CW
+theta = np.radians(60) # (-) --> CCW (+) --> CW
 ty = np.array([
             [1, 0, 0],
             [0, np.cos(theta), np.sin(theta)           ],
