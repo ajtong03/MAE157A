@@ -18,8 +18,8 @@ class AttitudeController:
         self.dt = dt                  # integration timestep (s)
 
         # add 10% margin for min and max thrusts
-        self.minForce = 0.05433327 * 9.81  * 1.1 #N
-        self.maxForce = 0.392966325 * 9.81 * 0.9#N
+        self.minForce = 0.05433327 * 9.81 # * 1.1 #N
+        self.maxForce = 0.392966325 * 9.81 #* 0.9#N
 
         self.minThrust = 4 * self.minForce
         self.maxThrust = 4 * self.maxForce
@@ -92,9 +92,11 @@ class AttitudeController:
     ##################################### FUNCTIONS FOR TESTING AND DETERMINING GAIN VALUES #####################################
     #############################################################################################################################
     #-------------------------ATTITUDE CONTROLLER TESTER FOR DIFFERENT GAIN VALUES----------------------------------#
-    def attController_test(self, state, target_state, Kp, Kd):
+    def attController_test(self, state, target_state, K_p=None, K_d=None):
         #Kp = constants.Kp_a
         #Kd = constants.Kd_a
+        Kp = K_p if K_p is not None else self.Kp
+        Kd = K_d if K_d is not None else self.Kd
 
         q = state[6:10]
         w = state[10:13]

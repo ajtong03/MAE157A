@@ -105,7 +105,7 @@ error_data = np.append(t, err)
 #print(Kd)
 
 # Simulation loop
-runningA = False
+runningA = True
 testingA = runningA
 while runningA:
    # print(t)
@@ -149,6 +149,9 @@ if testingA == True:
     plt.plot(time, q_x, label = 'q_x')
     plt.plot(time, q_y, label = 'q_y')
     plt.plot(time, q_z, label = 'q_z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Error')
+    plt.title('Attitude Controller Convergence')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -225,6 +228,9 @@ if testingP == True:
     plt.plot(time, a_x, label = 'a_x')
     plt.plot(time, a_y, label = 'a_y')
     plt.plot(time, a_z, label = 'a_z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Error')
+    plt.title('Position Controller Convergence')
     plt.axis([0, tfp, -2, 2])
 
     plt.legend()

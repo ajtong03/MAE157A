@@ -409,3 +409,4 @@ ax.set_title(f"3D Drone Trajectory through Gate, Thrust at Gate = {float(T_mag_g
 ax.legend()
 ax.grid(True)
 plt.show()
+

@@ -70,6 +70,7 @@ data = np.append(data,f)
 # initilize 3D plot
 sim = Updater()
 states = []
+target = []
 thrust_profile = []
 motor_forces = []
 time = []
@@ -78,7 +79,7 @@ time = []
 # ---------------------------------- Simulation loop ----------------------------------
 ####################################################################################### 
 t = 0.0
-runningSim = False
+runningSim = True
 while runningSim:
     # Get new desired state from trajectory planner
     xd, yd, zd, vx_d, vy_d, vz_d, ax_d, ay_d, az_d, jx_d, jy_d, jz_d = trajectory.traj_State(t)
@@ -105,6 +106,7 @@ while runningSim:
     state_cur = dyn.propagate(state_cur, f)
 
     states.append(state_cur.copy())
+    target.append(target_state.copy())
     # If z to low then indicate crash and end simulation
     # t > 2 set arbitrarily so it doesn't "CRASH" at the start
     '''
@@ -138,27 +140,78 @@ if save_data:
 
 # Plot velocity, thrust, and motor forces profiles
 states = np.array(states)
+target = np.array(target)
 thrust_profile = np.array(thrust_profile)
 motor_forces = np.array(motor_forces)
 
-vel_fig = plt.figure(2)
+pos_fig = plt.figure(2)
 time = np.array(time)
-plt.plot(time, states[:, 3], label = 'x velocity')
-plt.plot(time, states[:, 4], label = 'y velocity')
-plt.plot(time, states[:, 5], label = 'z velocity')
+plt.plot(time, target[:, 0], label = 'xd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 1], label = 'yd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 2], label = 'zd', lw = 4, alpha = 0.5)
+plt.plot(time, states[:, 0], label = 'x')
+plt.plot(time, states[:, 1], label = 'y')
+plt.plot(time, states[:, 2], label = 'z')
+plt.xlabel('Time (s)')
+plt.ylabel('Position (m)')
+plt.title('Position Profile')
+plt.legend()
+
+vel_fig = plt.figure(3)
+time = np.array(time)
+plt.plot(time, target[:, 3], label = 'vxd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 4], label = 'vyd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 5], label = 'vzd', lw = 4, alpha = 0.5)
+plt.plot(time, states[:, 3], label = 'vx')
+plt.plot(time, states[:, 4], label = 'vy')
+plt.plot(time, states[:, 5], label = 'vz')
+plt.xlabel('Time (s)')
+plt.ylabel('Velocity (m/s)')
 plt.title('Velocity Profile')
 plt.legend()
 
-thrust_fig = plt.figure(3)
+quat_fig = plt.figure(4)
+time = np.array(time)
+plt.plot(time, target[:, 6], label = 'qwd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 7], label = 'qxd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 8], label = 'qyd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 9], label = 'qzd', lw = 4, alpha = 0.5)
+plt.plot(time, states[:, 6], label = 'qw')
+plt.plot(time, states[:, 7], label = 'qx')
+plt.plot(time, states[:, 8], label = 'qy')
+plt.plot(time, states[:, 9], label = 'qz')
+plt.xlabel('Time (s)')
+plt.ylabel('Attitude')
+plt.title('Attitude Profile')
+plt.legend()
+
+ang_fig = plt.figure(5)
+time = np.array(time)
+plt.plot(time, target[:, 10], label = 'wxd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 11], label = 'wyd', lw = 4, alpha = 0.5)
+plt.plot(time, target[:, 12], label = 'wzd', lw = 4, alpha = 0.5)
+plt.plot(time, states[:, 10], label = 'wx')
+plt.plot(time, states[:, 11], label = 'wy')
+plt.plot(time, states[:, 12], label = 'wz')
+plt.xlabel('Time (s)')
+plt.ylabel('Angular Velocity (rad/s)')
+plt.title('Angular Velocity Profile')
+plt.legend()
+
+thrust_fig = plt.figure(6)
 plt.plot(time, thrust_profile, label = 'thrust magnitude')
+plt.xlabel('Time (s)')
+plt.ylabel('Thrust (N)')
 plt.title('Thrust Profile')
 plt.legend()
 
-motor_fig = plt.figure(4)
+motor_fig = plt.figure(7)
 plt.plot(time, motor_forces[:, 0], label = 'motor 1')
 plt.plot(time, motor_forces[:, 1], label = 'motor 2')
 plt.plot(time, motor_forces[:, 2], label = 'motor 3')
 plt.plot(time, motor_forces[:, 3], label = 'motor 4')
+plt.xlabel('Time (s)')
+plt.ylabel('Force (N)')
 plt.title('Motor Forces Profile')
 plt.legend()
 
@@ -176,3 +229,4 @@ def animate(i):
 sim.updateDrone(states[0], dyn)
 ani = animation.FuncAnimation(anim_fig, animate, frames=len(states), interval=dt/100, blit=False, repeat = False)
 plt.show()
+

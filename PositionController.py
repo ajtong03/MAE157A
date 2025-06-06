@@ -18,8 +18,8 @@ class PositionController:
 
         # apply 10% margin
         # multiply by 4 because there are 4 motors
-        self.minThrust = 4 * 0.05433327 * 9.81 * 1.1 #N
-        self.maxThrust = 4* 0.392966325 * 9.81 * 0.9 #N
+        self.minThrust = 4 * 0.05433327 * 9.81 #* 1.1 #N
+        self.maxThrust = 4* 0.392966325 * 9.81 #* 0.9 #N
 
         self.Kp = np.diag([10.9, 10.7, 10.77])
         self.Kd = np.diag([4.5, 4.5,  5.53])
@@ -73,7 +73,9 @@ class PositionController:
         return q_d, w_d, thrust, a
     
 # ------------------- COMPUTE ACCELERATION ERROR TO HELP DETERMINE GAINS --------------------
-    def getAccelError(self, state, target_state, a_d:np.ndarray, Kp, Kd):
+    def getAccelError(self, state, target_state, a_d:np.ndarray, K_p = None, K_d = None):
+        Kp = K_p if K_p is not None else self.Kp
+        Kd = K_d if K_d is not None else self.Kd
 
         p = state[0:3]
         v = state[3:6]
