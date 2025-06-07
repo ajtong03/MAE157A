@@ -93,8 +93,7 @@ while runningSim:
     target_state[3:6] = np.array([vx_d, vy_d, vz_d])
 
     q_d, w_d, thrust, a = pos.posController(state_cur, target_state, a_d, j_d)
-    #print('pos', target_state[0:3])
-    #print('desired: ', q_d)
+
     thrust_profile.append(thrust.copy())
 
     target_state[6:10] = q_d
@@ -138,7 +137,7 @@ if save_data:
     np.savetxt("../data/"+file_name, data, delimiter=",")
 
 
-# Plot velocity, thrust, and motor forces profiles
+# plot velocity, thrust, and motor forces profiles
 states = np.array(states)
 target = np.array(target)
 thrust_profile = np.array(thrust_profile)

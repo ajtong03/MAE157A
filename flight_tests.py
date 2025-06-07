@@ -196,11 +196,6 @@ wzd = inner['wzd'].to_numpy()
 # des_states_a[:, 6] = inner['wzd'].to_numpy()
 
 
-
-
-
-
-
 pos1 = plt.figure(2)
 plt.plot(time_o, x, label = 'actual x')
 plt.plot(time_o, y, label = 'actual y')

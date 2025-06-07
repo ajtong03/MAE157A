@@ -17,7 +17,7 @@ class AttitudeController:
         self.c = 0.2 # 0131               # Propeller Drag Coefficient (N·m/(N)^2)
         self.dt = dt                  # integration timestep (s)
 
-        # add 10% margin for min and max thrusts
+        # add 10% margin for min and max thrusts if necessary
         self.minForce = 0.05433327 * 9.81 # * 1.1 #N
         self.maxForce = 0.392966325 * 9.81 #* 0.9#N
 
@@ -175,7 +175,7 @@ class AttitudeController:
     def setAttController2(self, state, attitude):
         dynam = dyn(np.array([9.81]), self.dt)
         # n is the number of gain combos to try
-        n = 500
+        n = 1000
         max_errors =  np.zeros(n)
         kp_gains = np.zeros((n, 3))
         kd_gains = np.zeros((n, 3))

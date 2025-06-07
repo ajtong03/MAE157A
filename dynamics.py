@@ -55,7 +55,7 @@ class dynamics:
         rates[3:6]   = acc          # acceleration
         rates[6:10]  = dq           # quaternion rate
         rates[10:13] = domega       # angular acceleration
-        # print(rates)
+
         return rates
 
     # Using RK4 formula to propagate

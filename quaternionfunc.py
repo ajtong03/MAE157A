@@ -8,10 +8,8 @@ def product(q1, q2):
     q1q2_y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     q1q2_z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
      
-    # Create a 4 element array containing the final quaternion
+    # array containing the final quaternion
     prod_quaternion = np.array([q1q2_w, q1q2_x, q1q2_y, q1q2_z])
-        
-    # Return a 4 element array containing the final quaternion (q02,q12,q22,q32) 
     return prod_quaternion
     
 # function to compute the inverse of a quaternion

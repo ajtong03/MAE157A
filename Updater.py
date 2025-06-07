@@ -1,9 +1,6 @@
 import numpy as np  
 import matplotlib.pyplot as plt 
-import matplotlib.animation as animation  
-from mpl_toolkits.mplot3d import Axes3D  
-from math import sin, cos
-from quaternionfunc import quat_to_euler, quat_to_rot
+from quaternionfunc import quat_to_rot
 from trajectory import traj
 
 class Updater:
@@ -36,7 +33,7 @@ class Updater:
             [0, -0.25, -0.1905]  
         ])
 
-        # 45-degree rotation about Y-axis for gate
+        # rotation about Y-axis for gate
         theta = np.radians(80)
         ty = np.array([
             [1, 0, 0],
@@ -54,7 +51,7 @@ class Updater:
         self.ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
         self.ax.quiver(
             0, -1, 2.5,                    
-            gate_normal[0], gate_normal[1], gate_normal[2],  # Components
+            gate_normal[0], gate_normal[1], gate_normal[2],
             length=0.5, color='purple', linewidth=2, label='Expected Thrust Direction'
         )
         self.ax.plot(gate_pts[:, 0], gate_pts[:, 1], gate_pts[:, 2], color = 'black', lw=2)
