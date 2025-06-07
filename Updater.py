@@ -33,7 +33,7 @@ class Updater:
             [0, -0.1905, -0.25]  
         ])
 
-        # 45-degree rotation about Y-axis for gate
+        # angle rotation about Y-axis for gate
         theta = np.radians(80)
         ty = np.array([
             [np.cos(theta), 0, -np.sin(theta)],
